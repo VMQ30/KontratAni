@@ -1,5 +1,3 @@
-
-import Header from "./Header";
 import MetricCards from "./MetricCards";
 import MilestoneStepper from "./MilestoneStepper";
 import GeoOverview from "./GeoOverview";
