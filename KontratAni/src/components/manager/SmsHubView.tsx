@@ -75,6 +75,19 @@ export function SmsHubView() {
   const [selectedContract, setSelectedContract] = useState<string | null>(activeContracts[0]?.id || null);
   const contract = activeContracts.find(c => c.id === selectedContract);
   const farmers = contract?.matchedCooperative?.members || [];
+
+  const activeTemplate = BROADCAST_TEMPLATES.find((t) => t.key === selectedTemplate);
+
+  const handleSelectTemplate = (key: string) => {
+    setSelectedTemplate(key);
+    const t = BROADCAST_TEMPLATES.find((t) => t.key === key);
+    if (t) setEditableMessage(t[broadcastLang]);
+  };
+
+  const handleSelectLang = (l: 'en' | 'tl') => {
+    setBroadcastLang(l);
+    if (activeTemplate) setEditableMessage(activeTemplate[l]);
+  };
   
   const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY;
   const MAP_STYLE = `https://api.maptiler.com/maps/satellite/style.json?key=${MAPTILER_KEY}`;
@@ -136,7 +149,6 @@ export function SmsHubView() {
 
     const msgText = editableMessage.trim();
 
-    // ── Write to localStorage so MobileView tab picks it up via storage event ──
     const payload = {
       id: `bcast-${Date.now()}`,
       text: msgText,
@@ -144,7 +156,6 @@ export function SmsHubView() {
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 
-    // Update farmer statuses with stagger
     farmers.forEach((f, i) => {
       setTimeout(() => {
         updateFarmerSmsStatus(contract.id, f.id, 'notified');
