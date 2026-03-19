@@ -1,14 +1,35 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, type CropStatus } from '@/store/useAppStore';
 import { Check, X, FileText, Calendar, Package, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEffect } from 'react'; // 👈 added
+
+const CROP_STATUS_KEY = 'kontratani_crop_status'; // 👈 added — must match ContractsView
 
 export function ContractInboxView() {
   const contracts = useAppStore((s) => s.contracts);
   const acceptContract = useAppStore((s) => s.acceptContract);
   const setActiveView = useAppStore((s) => s.setActiveView);
+  const updateCropStatus = useAppStore((s) => s.updateCropStatus); // 👈 added
+
+  // 👇 Mirror the same cross-tab sync that ContractsView uses
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key !== CROP_STATUS_KEY || !e.newValue) return;
+      try {
+        const { contractId, cropStatus } = JSON.parse(e.newValue) as {
+          contractId: string;
+          cropStatus: CropStatus;
+          ts: number;
+        };
+        updateCropStatus(contractId, cropStatus);
+      } catch {}
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [updateCropStatus]);
 
   const pendingContracts = contracts.filter(c => c.status === 'matched' || c.status === 'open');
   const activeContracts = contracts.filter(c => ['accepted', 'funded', 'in_progress'].includes(c.status));
@@ -114,6 +135,15 @@ export function ContractInboxView() {
                     <div>
                       <h4 className="font-display font-semibold text-foreground">{contract.crop}</h4>
                       <p className="text-sm text-muted-foreground">{contract.volumeKg.toLocaleString()} kg • {contract.buyerName}</p>
+                      {/* 👇 Show live crop status so the manager sees real-time field updates */}
+                      {contract.cropStatus && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Crop status:{' '}
+                          <span className="font-medium text-foreground">
+                            {contract.cropStatus.replace(/_/g, ' ')}
+                          </span>
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
