@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { MapPin, Leaf } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import Map, { Source, Layer } from "react-map-gl/maplibre";
+import { FeatureCollection } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY;
@@ -23,28 +24,39 @@ const GeoOverview = () => {
     </div>
   );
 
+  const PH_CENTER = {
+    longitude: 120.90, 
+    latitude: 15.71,
+  };
+
   //mockup plot
-  const plotGeoJSON = useMemo(() => {
+  const plotGeoJSON = useMemo<FeatureCollection | null>(() => {
     if (!contract || !contract.matchedCooperative) return null;
     
     return {
       type: "FeatureCollection",
-      features: contract.matchedCooperative.members.map((farmer, idx) => ({
-        type: "Feature",
-        properties: { name: farmer.name, status: farmer.smsStatus },
-        geometry: {
-          type: "Polygon",
-          coordinates: [
-            [
-              [120.98 + idx * 0.01, 14.59],
-              [120.985 + idx * 0.01, 14.59],
-              [120.985 + idx * 0.01, 14.595],
-              [120.98 + idx * 0.01, 14.595],
-              [120.98 + idx * 0.01, 14.59],
-            ],
-          ],
-        },
-      })),
+      features: contract.matchedCooperative.members.map((farmer, idx) => {
+        // Offset each plot slightly so they don't overlap
+        const plotSize = 0.001;
+        const offset = idx * 0.0015; 
+        return {
+          type: "Feature",
+          properties: { 
+            name: farmer.name, 
+            status: farmer.smsStatus 
+          },
+          geometry: {
+            type: "Polygon",
+            coordinates: [[
+              [PH_CENTER.longitude + offset, PH_CENTER.latitude],
+              [PH_CENTER.longitude + plotSize + offset, PH_CENTER.latitude],
+              [PH_CENTER.longitude + plotSize + offset, PH_CENTER.latitude + plotSize],
+              [PH_CENTER.longitude + offset, PH_CENTER.latitude + plotSize],
+              [PH_CENTER.longitude + offset, PH_CENTER.latitude],
+            ]],
+          },
+        };
+      }),
     };
   }, [contract]);
 
@@ -68,15 +80,17 @@ const GeoOverview = () => {
     status: farmer.smsStatus === "pending" ? "Pending" : "Active",
   }));
 
+  console.log("Current GeoJSON Data:", plotGeoJSON);
+
   return (
     <Card className="flex flex-col border border-border bg-card shadow-none">
       <div className="relative h-52 w-full overflow-hidden rounded-t-lg lg:h-64">
         {!mapError ? (
           <Map
             initialViewState={{
-              longitude: 120.98, 
-              latitude: 14.59,
-              zoom: 12,
+              longitude: PH_CENTER.longitude, 
+              latitude: PH_CENTER.latitude,
+              zoom: 15,
               pitch: 60, 
               bearing: 20,
             }}
@@ -91,6 +105,7 @@ const GeoOverview = () => {
                 <Layer
                   id="plot-fills"
                   type="fill"
+                  source="plot-data"
                   paint={{
                     "fill-color": [
                       "match",
@@ -98,12 +113,13 @@ const GeoOverview = () => {
                       "pending", "#eab308", 
                       "#22c55e", 
                     ],
-                    "fill-opacity": 0.6,
+                    "fill-opacity": 0.9,
                   }}
                 />
                 <Layer
                   id="plot-outlines"
                   type="line"
+                  source="plot-data"
                   paint={{
                     "line-color": "#ffffff",
                     "line-width": 2,
