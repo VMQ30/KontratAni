@@ -4,13 +4,22 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AnimatePresence } from "framer-motion";
-import Auth from "./pages/Auth.tsx"; 
+import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Manager from "./pages/Manager.tsx";
 import BuyerLayout from "@/components/buyer/buyerlayout.tsx";
 
-// placeholder muna itech connect connect nalang 
-const CoopDashboard = () => <div className="p-10 text-2xl font-bold">🤝 Cooperative Dashboard (Coming Soon)</div>;
-const FarmerDashboard = () => <div className="p-10 text-2xl font-bold">🌱 Farmer Dashboard (Coming Soon)</div>;
+// placeholder muna itech connect connect nalang
+const CoopDashboard = () => (
+  <div className="p-10 text-2xl font-bold">
+    🤝 Cooperative Dashboard (Coming Soon)
+  </div>
+);
+const FarmerDashboard = () => (
+  <div className="p-10 text-2xl font-bold">
+    🌱 Farmer Dashboard (Coming Soon)
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -21,13 +30,13 @@ const AnimatedRoutes = () => {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Auth />} />
-        
+
         {/* Dito siya icconnect also need pala gumawa tayo ng layout kasi yun yung magsserve as a master
         container between the role's dashboard view and sidebard view. */}
         <Route path="/buyer-dashboard" element={<BuyerLayout />} />
-        <Route path="/coop-dashboard" element={<CoopDashboard />} />
+        <Route path="/coop-dashboard" element={<Manager />} />
         <Route path="/farmer-dashboard" element={<FarmerDashboard />} />
-        
+
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>
