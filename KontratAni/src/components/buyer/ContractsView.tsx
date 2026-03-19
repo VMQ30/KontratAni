@@ -8,16 +8,6 @@ import { useState } from 'react';
 import { Lock, CheckCircle2, ArrowLeft, Sprout, Droplets, Sun, Truck, Package } from 'lucide-react';
 import ContractsIndex from './contracts/ContractsIndex';
 
-const timelineSteps: { status: CropStatus; label: string; icon: React.ElementType }[] = [
-  { status: 'pending', label: 'Contract Signed', icon: Package },
-  { status: 'seeds_planted', label: 'Seeds Planted', icon: Sprout },
-  { status: 'fertilized', label: 'Fertilized', icon: Droplets },
-  { status: 'growing', label: 'Growing', icon: Sun },
-  { status: 'ready_for_harvest', label: 'Ready for Harvest', icon: Sprout },
-  { status: 'harvested', label: 'Harvested', icon: Package },
-  { status: 'delivered', label: 'Delivered', icon: Truck },
-];
-
 const statusOrder: CropStatus[] = ['pending', 'seeds_planted', 'fertilized', 'growing', 'ready_for_harvest', 'harvested', 'delivered'];
 
 export function ContractsView() {
@@ -52,8 +42,6 @@ export function ContractsView() {
       </div>
     );
   }
-
-  const currentStepIdx = statusOrder.indexOf(contract.cropStatus);
 
   const handleFundEscrow = () => {
     fundContract(contract.id);
