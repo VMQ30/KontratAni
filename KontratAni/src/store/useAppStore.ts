@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export type CropStatus = 'pending' | 'seeds_planted' | 'fertilized' | 'growing' | 'ready_for_harvest' | 'harvested' | 'delivered';
-export type ContractStatus = 'open' | 'matched' | 'accepted' | 'funded' | 'in_progress' | 'completed';
+export type ContractStatus = 'open' | 'matched' | 'accepted' | 'funded' | 'in_progress' | 'completed' | 'declined';
 export type FarmerSmsStatus = 'pending' | 'notified' | 'confirmed' | 'planted' | 'harvested';
 
 export interface Farmer {
@@ -61,17 +61,21 @@ interface AppState {
   addContract: (demand: DemandRequest) => Contract;
   matchContract: (contractId: string, coopId: string) => void;
   acceptContract: (contractId: string) => void;
+  declineContract: (contractId: string) => void;
   fundContract: (contractId: string) => void;
   updateCropStatus: (contractId: string, status: CropStatus) => void;
   updateFarmerSmsStatus: (contractId: string, farmerId: string, status: FarmerSmsStatus) => void;
+  addCoopMember: (coopId: string, farmer: Farmer) => void;
+  removeCoopMember: (coopId: string, farmerId: string) => void;
+  updateCoopMemberCrops: (coopId: string, farmerId: string, crops: string[]) => void;
 }
 
 const mockFarmers: Farmer[] = [
-  { id: 'f1', name: 'Juan dela Cruz', hectares: 2.5, location: 'Brgy. San Jose', lat: 14.58, lng: 121.0, soilType: 'Loam', smsStatus: 'pending', assignedKg: 0, payoutMethod: 'gcash', paid: false },
-  { id: 'f2', name: 'Maria Santos', hectares: 1.8, location: 'Brgy. Sta. Rosa', lat: 14.61, lng: 121.02, soilType: 'Clay Loam', smsStatus: 'pending', assignedKg: 0, payoutMethod: 'maya', paid: false },
-  { id: 'f3', name: 'Pedro Reyes', hectares: 3.0, location: 'Brgy. Bagumbayan', lat: 14.56, lng: 120.98, soilType: 'Sandy Loam', smsStatus: 'pending', assignedKg: 0, payoutMethod: 'cash', paid: false },
-  { id: 'f4', name: 'Ana Flores', hectares: 2.2, location: 'Brgy. Maligaya', lat: 14.59, lng: 121.04, soilType: 'Loam', smsStatus: 'pending', assignedKg: 0, payoutMethod: 'gcash', paid: false },
-  { id: 'f5', name: 'Ricardo Mendoza', hectares: 4.0, location: 'Brgy. Pag-asa', lat: 14.63, lng: 120.96, soilType: 'Silt Loam', smsStatus: 'pending', assignedKg: 0, payoutMethod: 'cash', paid: false },
+  { id: 'f1', name: 'Juan dela Cruz',   hectares: 2.5, location: 'Brgy. San Jose',      lat: 14.58, lng: 121.0,  soilType: 'Loam',       smsStatus: 'pending', assignedKg: 0, payoutMethod: 'gcash', paid: false },
+  { id: 'f2', name: 'Maria Santos',     hectares: 1.8, location: 'Brgy. Sta. Rosa',     lat: 14.61, lng: 121.02, soilType: 'Clay Loam',  smsStatus: 'pending', assignedKg: 0, payoutMethod: 'maya',  paid: false },
+  { id: 'f3', name: 'Pedro Reyes',      hectares: 3.0, location: 'Brgy. Bagumbayan',    lat: 14.56, lng: 120.98, soilType: 'Sandy Loam', smsStatus: 'pending', assignedKg: 0, payoutMethod: 'cash',  paid: false },
+  { id: 'f4', name: 'Ana Flores',       hectares: 2.2, location: 'Brgy. Maligaya',      lat: 14.59, lng: 121.04, soilType: 'Loam',       smsStatus: 'pending', assignedKg: 0, payoutMethod: 'gcash', paid: false },
+  { id: 'f5', name: 'Ricardo Mendoza',  hectares: 4.0, location: 'Brgy. Pag-asa',       lat: 14.63, lng: 120.96, soilType: 'Silt Loam',  smsStatus: 'pending', assignedKg: 0, payoutMethod: 'cash',  paid: false },
 ];
 
 const mockCooperatives: Cooperative[] = [
@@ -144,7 +148,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!coop) return;
     set((s) => ({
       contracts: s.contracts.map((c) =>
-        c.id === contractId ? { ...c, status: 'matched' as ContractStatus, matchedCooperative: coop, progress: 10 } : c
+        c.id === contractId
+          ? { ...c, status: 'matched' as ContractStatus, matchedCooperative: coop, progress: 10 }
+          : c
       ),
     }));
   },
@@ -153,6 +159,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({
       contracts: s.contracts.map((c) =>
         c.id === contractId ? { ...c, status: 'accepted' as ContractStatus, progress: 15 } : c
+      ),
+    }));
+  },
+
+  declineContract: (contractId) => {
+    set((s) => ({
+      contracts: s.contracts.map((c) =>
+        c.id === contractId ? { ...c, status: 'declined' as ContractStatus, progress: 0 } : c
       ),
     }));
   },
@@ -169,11 +183,19 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateCropStatus: (contractId, status) => {
     const progressMap: Record<CropStatus, number> = {
-      pending: 0, seeds_planted: 25, fertilized: 40, growing: 60, ready_for_harvest: 80, harvested: 95, delivered: 100,
+      pending: 0, seeds_planted: 25, fertilized: 40, growing: 60,
+      ready_for_harvest: 80, harvested: 95, delivered: 100,
     };
     set((s) => ({
       contracts: s.contracts.map((c) =>
-        c.id === contractId ? { ...c, cropStatus: status, progress: progressMap[status], status: status === 'delivered' ? 'completed' as ContractStatus : c.status } : c
+        c.id === contractId
+          ? {
+              ...c,
+              cropStatus: status,
+              progress: progressMap[status],
+              status: status === 'delivered' ? ('completed' as ContractStatus) : c.status,
+            }
+          : c
       ),
     }));
   },
@@ -192,6 +214,51 @@ export const useAppStore = create<AppState>((set, get) => ({
           },
         };
       }),
+    }));
+  },
+
+  addCoopMember: (coopId, farmer) => {
+    set((s) => ({
+      cooperatives: s.cooperatives.map((coop) =>
+        coop.id === coopId
+          ? {
+              ...coop,
+              members: [...coop.members, farmer],
+              totalHectares: parseFloat((coop.totalHectares + farmer.hectares).toFixed(2)),
+            }
+          : coop
+      ),
+    }));
+  },
+
+  removeCoopMember: (coopId, farmerId) => {
+    set((s) => ({
+      cooperatives: s.cooperatives.map((coop) => {
+        if (coop.id !== coopId) return coop;
+        const removed = coop.members.find((f) => f.id === farmerId);
+        return {
+          ...coop,
+          members: coop.members.filter((f) => f.id !== farmerId),
+          totalHectares: parseFloat(
+            (coop.totalHectares - (removed?.hectares ?? 0)).toFixed(2)
+          ),
+        };
+      }),
+    }));
+  },
+
+  updateCoopMemberCrops: (coopId, farmerId, crops) => {
+    set((s) => ({
+      cooperatives: s.cooperatives.map((coop) =>
+        coop.id !== coopId
+          ? coop
+          : {
+              ...coop,
+              members: coop.members.map((f) =>
+                f.id === farmerId ? { ...f, crops } as any : f
+              ),
+            }
+      ),
     }));
   },
 }));
