@@ -45,12 +45,14 @@ const MilestoneStepper = () => {
           return (
             <div key={s.label} className="flex flex-1 flex-col items-center">
               <div className="flex w-full items-center">
-                {i > 0 && (
+                {i > 0 ? (
                   <div
                     className={`h-1 flex-1 rounded-full ${
                       completed || active ? "bg-primary" : "bg-progress-track"
                     }`}
                   />
+                ) : (
+                  <div className="h-1 flex-1" />
                 )}
                 <div
                   className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
