@@ -30,6 +30,20 @@ export interface Cooperative {
   weatherScore: number;
 }
 
+export interface SoloFarmer {
+  id: string;
+  name: string;
+  hectares: number;
+  location: string;
+  lat: number;
+  lng: number;
+  soilType: string;
+  smsStatus: FarmerSmsStatus;
+  assignedKg: number;
+  payoutMethod: 'cash' | 'gcash' | 'maya';
+  paid: boolean;
+}
+
 export interface Contract {
   id: string;
   crop: string;
@@ -60,6 +74,7 @@ export interface BroadcastMessage {
 interface AppState {
   contracts: Contract[];
   cooperatives: Cooperative[];
+  soloFarmers: SoloFarmer[];
   activeView: string;
   selectedContractId: string | null;
 
@@ -108,6 +123,19 @@ const mockCooperatives: Cooperative[] = [
   },
 ];
 
+const mocksoloFarmers: SoloFarmer[] = [
+  {
+    id: 'sf1', name: 'Luzviminda Garcia', hectares: 1.5, location: 'Brgy. San Isidro',
+    lat: 14.57, lng: 121.03, soilType: 'Loam', smsStatus: 'pending', assignedKg: 0,
+    payoutMethod: 'gcash', paid: false,
+  },
+  {
+    id: 'sf2', name: 'Manuel Santos', hectares: 2.0, location: 'Brgy. Santa Cruz',
+    lat: 14.60, lng: 121.05, soilType: 'Silt Loam', smsStatus: 'pending', assignedKg: 0,
+    payoutMethod: 'maya', paid: false,
+  },
+];
+
 const mockContracts: Contract[] = [
   {
     id: 'c1', crop: 'Tomatoes', volumeKg: 5000, targetDate: '2026-06-15',
@@ -132,6 +160,7 @@ const mockContracts: Contract[] = [
 export const useAppStore = create<AppState>((set, get) => ({
   contracts: mockContracts,
   cooperatives: mockCooperatives,
+  soloFarmers: mocksoloFarmers,
   activeView: 'dashboard',
   selectedContractId: null,
   broadcastMessages: [],

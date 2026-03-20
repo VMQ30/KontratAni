@@ -79,7 +79,7 @@ export function ManagerDashboardView({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="font-display text-2xl font-bold text-foreground">Manager Dashboard</h2>
+        <h2 className="font-display text-2xl font-bold text-foreground">ManagerDashboard</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {isSolo ? 'Solo Farmer overview' : 'Cooperative operations at a glance'}
         </p>
