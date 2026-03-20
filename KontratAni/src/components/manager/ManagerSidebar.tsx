@@ -1,13 +1,22 @@
-import { useAppStore } from '@/store/useAppStore';
-import { User, Inbox, Sliders, MessageSquare, Wallet, Sprout } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useAppStore } from "@/store/useAppStore";
+import {
+  User,
+  Inbox,
+  Sliders,
+  MessageSquare,
+  Wallet,
+  Sprout,
+  BarChart3,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const navItems = [
-  { id: 'profile', label: 'Profile & Land', icon: User },
-  { id: 'inbox', label: 'Contract Inbox', icon: Inbox },
-  { id: 'allocation', label: 'Quota Allocation', icon: Sliders },
-  { id: 'sms-hub', label: 'SMS & Monitoring', icon: MessageSquare },
-  { id: 'payouts', label: 'Payouts', icon: Wallet },
+  { id: "profile", label: "Profile & Land", icon: User },
+  { id: "inbox", label: "Contract Inbox", icon: Inbox },
+  { id: "allocation", label: "Quota Allocation", icon: Sliders },
+  { id: "sms-hub", label: "SMS & Monitoring", icon: MessageSquare },
+  { id: "payouts", label: "Payouts", icon: Wallet },
+  { id: "ai-reports", label: "AI Reports", icon: BarChart3 },
 ];
 
 export function ManagerSidebar() {
@@ -20,7 +29,9 @@ export function ManagerSidebar() {
           <Sprout className="h-5 w-5 text-sidebar-primary" />
         </div>
         <div>
-          <h1 className="font-display text-lg font-bold tracking-tight text-sidebar-primary">KontratAni</h1>
+          <h1 className="font-display text-lg font-bold tracking-tight text-sidebar-primary">
+            KontratAni
+          </h1>
           <p className="text-xs text-sidebar-muted">Manager Portal</p>
         </div>
       </div>
@@ -34,10 +45,10 @@ export function ManagerSidebar() {
               key={item.id}
               onClick={() => setActiveView(item.id)}
               className={cn(
-                'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
+                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150",
                 active
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
               )}
             >
               <Icon className="h-4 w-4" />
