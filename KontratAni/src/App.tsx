@@ -9,14 +9,8 @@ import NotFound from "./pages/NotFound.tsx";
 import BuyerLayout from "@/components/buyer/BuyerLayout.tsx";
 import Manager from "@/components/manager/Manager.tsx";
 import { FarmerLayout } from "@/components/farmer/FarmerLayout.tsx";
-import MobileView from "@/components/mobile/MobileView.tsx"; // 👈 i-add ito
-
-// placeholder muna itech connect connect nalang
-const CoopDashboard = () => (
-  <div className="p-10 text-2xl font-bold">
-    🤝 Cooperative Dashboard (Coming Soon)
-  </div>
-);
+import MobileView from "@/components/mobile/MobileView.tsx";
+import KontratAniApp from "@/components/simulator/KontratAniApp.tsx";
 
 const queryClient = new QueryClient();
 
@@ -28,14 +22,13 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Auth />} />
 
-        {/* Dito siya icconnect also need pala gumawa tayo ng layout kasi yun yung magsserve as a master
-        container between the role's dashboard view and sidebard view. */}
         <Route path="/buyer-dashboard" element={<BuyerLayout />} />
         <Route path="/coop-dashboard" element={<Manager />} />
         <Route path="/farmer-dashboard" element={<FarmerLayout />} />
-
-        {/* 👇 Mobile SMS View */}
         <Route path="/mobile-view" element={<MobileView />} />
+
+        {/* Simulator — single entry point, persona switcher lives inside */}
+        <Route path="/simulator" element={<KontratAniApp />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
