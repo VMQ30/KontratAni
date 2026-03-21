@@ -1,8 +1,14 @@
+// DashboardView.tsx (Buyer)
+
 import { useAppStore } from '@/store/useAppStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Package, Wallet, TrendingUp, ChevronRight } from 'lucide-react';
+import { FileText, Package, Wallet, TrendingUp, ChevronRight,
+  // ── NEW: verification state icons for contract list badges ─────────────────
+  ShieldAlert, Hourglass,
+  // ── END ────────────────────────────────────────────────────────────────────
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const statusColors: Record<string, string> = {
@@ -14,15 +20,26 @@ const statusColors: Record<string, string> = {
   completed: 'bg-primary text-primary-foreground',
 };
 
+// ── MODIFIED: added labels for pending_verification and disputed states ────────
+// previous: only had labels for the 7 CropStatus values (pending → delivered).
+// Without these, contracts in a pending_verification or disputed state would
+// display the raw key string (e.g. "pending_verification") in the dashboard list.
 const cropStatusLabels: Record<string, string> = {
-  pending: 'Pending',
-  seeds_planted: 'Seeds Planted',
-  fertilized: 'Fertilized',
-  growing: 'Growing',
-  ready_for_harvest: 'Ready for Harvest',
-  harvested: 'Harvested',
-  delivered: 'Delivered',
+  pending:              'Pending',
+  seeds_planted:        'Seeds Planted',
+  fertilized:           'Fertilized',
+  growing:              'Growing',
+  ready_for_harvest:    'Ready for Harvest',
+  harvested:            'Harvested',
+  delivered:            'Delivered',
+  // ── NEW entries ─────────────────────────────────────────────────────────────
+  // These aren't CropStatus values but can appear as derived display states
+  // when we want to surface verification context in the dashboard label.
+  pending_verification: 'Awaiting Buyer Sign-off',
+  disputed:             'Disputed — Escrow Frozen',
+  // ── END ────────────────────────────────────────────────────────────────────
 };
+// ── END ──────────────────────────────────────────────────────────────────────
 
 export function DashboardView() {
   const { contracts, setActiveView, selectContract } = useAppStore();
@@ -39,6 +56,26 @@ export function DashboardView() {
     { label: 'Avg. Progress', value: `${avgProgress}%`, icon: TrendingUp, color: 'text-primary' },
   ];
 
+  // ── NEW: helper — derive the best display label for a contract's crop status,
+  // taking verification state into account so the dashboard accurately reflects
+  // whether a reported milestone is verified or pending sign-off.
+  function getCropStatusLabel(contract: typeof contracts[0]): string {
+    // Dispute overrides everything
+    if (contract.disputeFlag) {
+      return cropStatusLabels['disputed'];
+    }
+    // If the latest evidence for the current cropStatus is pending, say so
+    const latestEvidence = contract.milestoneEvidence?.find(
+      e => e.cropStatus === contract.cropStatus
+    );
+    if (latestEvidence?.verificationStatus === 'pending_verification') {
+      return cropStatusLabels['pending_verification'];
+    }
+    // Otherwise use the standard label, falling back to the raw key
+    return cropStatusLabels[contract.cropStatus] ?? contract.cropStatus.replace(/_/g, ' ');
+  }
+  // ── END ────────────────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-8">
       <div>
@@ -46,7 +83,7 @@ export function DashboardView() {
         <p className="mt-1 text-sm text-muted-foreground">Your command center for contract farming operations</p>
       </div>
 
-      {/* Metric Cards */}
+      {/* Metric Cards — unchanged */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {metrics.map((m, i) => {
           const Icon = m.icon;
@@ -67,6 +104,43 @@ export function DashboardView() {
           );
         })}
       </div>
+
+      {/* ── NEW: surface-level alerts for disputed / pending confirmation ─────────
+          Buyers land on the dashboard first; these prompt them to take action
+          without having to drill into individual contracts.
+      ── END ── */}
+      {contracts.some(c => c.disputeFlag) && (
+        <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
+          <button
+            onClick={() => setActiveView('contracts')}
+            className="flex w-full items-center gap-3 rounded-lg border-2 border-red-300 bg-red-50 px-4 py-3 text-left hover:bg-red-100 transition-colors"
+          >
+            <ShieldAlert className="h-4 w-4 shrink-0 text-red-600" />
+            <p className="flex-1 text-sm font-medium text-red-800">
+              {contracts.filter(c => c.disputeFlag).length} contract(s) have active disputes — escrow is frozen.
+              View in My Contracts.
+            </p>
+            <ChevronRight className="h-4 w-4 text-red-400" />
+          </button>
+        </motion.div>
+      )}
+
+      {contracts.some(c => c.pendingBuyerConfirmation && !c.disputeFlag) && (
+        <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
+          <button
+            onClick={() => setActiveView('contracts')}
+            className="flex w-full items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left hover:bg-amber-100 transition-colors"
+          >
+            <Hourglass className="h-4 w-4 shrink-0 text-amber-600" />
+            <p className="flex-1 text-sm font-medium text-amber-800">
+              {contracts.filter(c => c.pendingBuyerConfirmation && !c.disputeFlag).length} delivery confirmation(s) awaiting your sign-off.
+              Farmers are waiting for payout.
+            </p>
+            <ChevronRight className="h-4 w-4 text-amber-400" />
+          </button>
+        </motion.div>
+      )}
+      {/* ── END ────────────────────────────────────────────────────────────────── */}
 
       {/* Contract List */}
       <Card>
@@ -100,6 +174,18 @@ export function DashboardView() {
                     <Badge variant="secondary" className={statusColors[contract.status]}>
                       {contract.status.replace('_', ' ')}
                     </Badge>
+                    {/* ── NEW: surface dispute / pending badges in the contract row ─── */}
+                    {contract.disputeFlag && (
+                      <Badge className="border-red-200 bg-red-50 text-red-700 text-[10px]">
+                        <ShieldAlert className="mr-1 h-3 w-3" /> Frozen
+                      </Badge>
+                    )}
+                    {!contract.disputeFlag && contract.pendingBuyerConfirmation && (
+                      <Badge className="border-amber-200 bg-amber-50 text-amber-700 text-[10px]">
+                        <Hourglass className="mr-1 h-3 w-3" /> Action Needed
+                      </Badge>
+                    )}
+                    {/* ── END ────────────────────────────────────────────────────── */}
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {contract.volumeKg.toLocaleString()} kg · Target: {contract.targetDate}
@@ -109,7 +195,21 @@ export function DashboardView() {
                     <Progress value={contract.progress} className="h-2 flex-1" />
                     <span className="text-xs font-medium text-muted-foreground">{contract.progress}%</span>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{cropStatusLabels[contract.cropStatus]}</p>
+                  {/* ── MODIFIED: uses getCropStatusLabel instead of cropStatusLabels[x] ─
+                      previous: <p className="mt-1 text-xs text-muted-foreground">{cropStatusLabels[contract.cropStatus]}</p>
+                      Reason: plain lookup would show undefined for verification states;
+                      getCropStatusLabel handles disputed and pending_verification gracefully.
+                  ── END ── */}
+                  <p className={`mt-1 text-xs font-medium ${
+                    contract.disputeFlag
+                      ? 'text-red-600'
+                      : contract.pendingBuyerConfirmation && !contract.buyerConfirmedDelivery
+                      ? 'text-amber-600'
+                      : 'text-muted-foreground'
+                  }`}>
+                    {getCropStatusLabel(contract)}
+                  </p>
+                  {/* ── END ────────────────────────────────────────────────────── */}
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
               </button>
