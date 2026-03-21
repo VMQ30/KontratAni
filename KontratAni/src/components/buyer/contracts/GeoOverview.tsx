@@ -78,10 +78,19 @@ const GeoOverview = () => {
   }
 
   const coop = contract.matchedCooperative;
+  
+  const statusColorMap: Record<string, { color: string; label: string }> = {
+    pending: { color: "#eab308", label: "Pending" },
+    notified: { color: "#3b82f6", label: "Notified" },
+    confirmed: { color: "#8b5cf6", label: "Confirmed" },
+    planted: { color: "#22c55e", label: "Planted" },
+    harvested: { color: "#f97316", label: "Harvested" },
+  };
+
   const plots = coop.members.map((farmer) => ({
     name: `${farmer.name.split(" ")[0]}'s Plot`,
     yield: `${Math.round(contract.volumeKg / coop.members.length)} kg est.`,
-    status: farmer.smsStatus === "pending" ? "Pending" : "Active",
+    status: statusColorMap[farmer.smsStatus]?.label || "Unknown",
   }));
 
   console.log("Current GeoJSON Data:", plotGeoJSON);
@@ -114,8 +123,12 @@ const GeoOverview = () => {
                     "fill-color": [
                       "match",
                       ["get", "status"],
-                      "pending", "#eab308", 
-                      "#22c55e", 
+                      "pending", "#eab308",
+                      "notified", "#3b82f6",
+                      "confirmed", "#8b5cf6",
+                      "planted", "#22c55e",
+                      "harvested", "#f97316",
+                      "#22c55e",
                     ],
                     "fill-opacity": 0.9,
                   }}
@@ -160,19 +173,49 @@ const GeoOverview = () => {
         )}
       </div>
 
-      <div className="divide-y divide-border p-4">
-        {plots.map((p) => (
-          <div key={p.name} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-            <div className="flex items-center gap-2">
-              <Leaf className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-heading">{p.name}</span>
-              <span className="text-sm text-body">{p.yield}</span>
+      <div className="border-t border-border p-4">
+        <div className="mb-4">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Plot Status Legend</h3>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-4 rounded" style={{ backgroundColor: "#eab308" }}></div>
+              <span className="text-sm text-body">Pending</span>
             </div>
-            <span className="rounded-full bg-status-success/15 px-2 py-0.5 text-xs font-medium text-status-success">
-              {p.status}
-            </span>
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-4 rounded" style={{ backgroundColor: "#3b82f6" }}></div>
+              <span className="text-sm text-body">Notified</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-4 rounded" style={{ backgroundColor: "#8b5cf6" }}></div>
+              <span className="text-sm text-body">Confirmed</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-4 rounded" style={{ backgroundColor: "#22c55e" }}></div>
+              <span className="text-sm text-body">Planted</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-4 rounded" style={{ backgroundColor: "#f97316" }}></div>
+              <span className="text-sm text-body">Harvested</span>
+            </div>
           </div>
-        ))}
+        </div>
+        <div className="border-t border-border pt-4">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Plot Details</h3>
+          <div className="divide-y divide-border">
+            {plots.map((p) => (
+              <div key={p.name} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                <div className="flex items-center gap-2">
+                  <Leaf className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-heading">{p.name}</span>
+                  <span className="text-sm text-body">{p.yield}</span>
+                </div>
+                <span className="rounded-full bg-status-success/15 px-2 py-0.5 text-xs font-medium text-status-success">
+                  {p.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </Card>
   );
