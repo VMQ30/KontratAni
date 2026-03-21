@@ -144,7 +144,7 @@ export function AiReportView() {
           {
             title: "Escrow & Revenue Summary",
             icon: <Banknote className="h-4 w-4 text-primary" />,
-            content: `Total escrow funds locked: ₱${totalEscrow.toLocaleString()}. This represents advance payments from institutional buyers secured through KontratAni's smart escrow system. ${contracts.filter((c) => c.escrowAmount > 0).length} out of ${activeContracts.length} contracts are fully funded. The unfunded contracts represent ₱${activeContracts
+            content: `Total escrow funds locked: ₱${totalEscrow.toLocaleString()}. This represents advance payments from institutional buyers secured through PalAi's smart escrow system. ${contracts.filter((c) => c.escrowAmount > 0).length} out of ${activeContracts.length} contracts are fully funded. The unfunded contracts represent ₱${activeContracts
               .filter((c) => c.escrowAmount === 0)
               .reduce((s, c) => s + c.volumeKg * 30, 0)
               .toLocaleString()} in potential escrow.`,

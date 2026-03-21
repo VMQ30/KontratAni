@@ -47,7 +47,7 @@ function getAiResponse(
     q.includes("guide") ||
     q.includes("get started")
   ) {
-    return `🎓 **Welcome to KontratAni — Manager Portal Tutorial!**
+    return `**Welcome to PalAi — Manager Portal Tutorial!**
 
 Here's a step-by-step guide to using the system:
 
@@ -143,7 +143,7 @@ Farmers respond via SMS from their feature phones — the system tracks everythi
   }
 
   if (q.includes("escrow") || q.includes("fund")) {
-    return `🔒 **Understanding Escrow in KontratAni:**
+    return `🔒 **Understanding Escrow in PalAi:**
 
 Escrow is a secure holding mechanism where the **institutional buyer locks funds** before the farming cycle begins. This guarantees farmers will be paid upon delivery.
 
@@ -213,7 +213,7 @@ Just select a report type and click **"Generate Report"**. The AI analyzes your 
     q.includes("hey") ||
     q.includes("kumusta")
   ) {
-    return `Kumusta! 👋 I'm your KontratAni AI assistant. I can help you navigate the manager portal, explain features, or give you a full system tutorial.
+    return `Kumusta! 👋 I'm your PalAi AI assistant. I can help you navigate the manager portal, explain features, or give you a full system tutorial.
 
 Try asking me:
 - "Show system tutorial"
@@ -244,7 +244,7 @@ export function AiChatbot() {
       id: "0",
       role: "assistant",
       content:
-        "Kumusta! 👋 I'm your KontratAni AI assistant. I can help you navigate the platform, explain features, or provide a full tutorial. What would you like to know?",
+        "Kumusta! 👋 I'm your PalAi AI assistant. I can help you navigate the platform, explain features, or provide a full tutorial. What would you like to know?",
       timestamp: new Date(),
     },
   ]);
@@ -340,7 +340,7 @@ export function AiChatbot() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-primary-foreground">
-                    KontratAni AI
+                    PalAi AI
                   </p>
                   <p className="text-[10px] text-primary-foreground/70">
                     Always ready to help
@@ -461,7 +461,7 @@ export function AiChatbot() {
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask anything about KontratAni..."
+                  placeholder="Ask anything about PalAi..."
                   className="h-9 rounded-full border-border bg-muted/50 px-4 text-sm"
                   disabled={isTyping}
                 />

@@ -3,22 +3,32 @@ import { useAppStore } from "@/store/useAppStore";
 import type { CropStatus, FarmerSmsStatus } from "@/store/useAppStore";
 
 type Lang = "en" | "tl";
-type Step = "lang" | "main" | "crop_info" | "complaint" | "complaint_detail" | "complaint_when" | "support" | "support_detail" | "support_urgency" | "contract" | "done";
+type Step =
+  | "lang"
+  | "main"
+  | "crop_info"
+  | "complaint"
+  | "complaint_detail"
+  | "complaint_when"
+  | "support"
+  | "support_detail"
+  | "support_urgency"
+  | "contract"
+  | "done";
 
 interface Message {
   id: number;
   text: string;
-  from: "kontratani" | "farmer";
+  from: "PalAi" | "farmer";
   isBroadcast?: boolean;
 }
 
-const STORAGE_KEY = 'kontratani_broadcast';
-const CROP_STATUS_KEY = 'kontratani_crop_status';
+const STORAGE_KEY = "kontratani_broadcast";
+const CROP_STATUS_KEY = "kontratani_crop_status";
 
 // ─── Menus ────────────────────────────────────────────────────────────────────
 
-const LANG_PROMPT =
-  `Welcome to KontratAni! 🌾\nMaligayang pagdating sa KontratAni!\n\nPumili ng wika / Choose language:\n1 - English\n2 - Tagalog`;
+const LANG_PROMPT = `Welcome to PalAi! 🌾\nMaligayang pagdating sa PalAi!\n\nPumili ng wika / Choose language:\n1 - English\n2 - Tagalog`;
 
 const MAIN_MENU = {
   en: `What would you like to do?\n\n1 - Update a crop\n2 - Submit a complaint\n3 - Request for support\n4 - Check contract status\n0 - Send another message`,
@@ -26,12 +36,31 @@ const MAIN_MENU = {
 };
 
 const CROP_STATUS_ORDER = [
-  'seeds_planted', 'fertilized', 'growing', 'ready_for_harvest', 'harvested', 'delivered'
+  "seeds_planted",
+  "fertilized",
+  "growing",
+  "ready_for_harvest",
+  "harvested",
+  "delivered",
 ] as const;
 
 const CROP_STATUS_LABELS = {
-  en: ['Seeds Planted', 'Fertilized', 'Growing', 'Ready for Harvest', 'Harvested', 'Delivered'],
-  tl: ['Naitanim na ang Binhi', 'Binigyan ng Pataba', 'Lumalaki na', 'Handa nang Anihin', 'Na-ani na', 'Naihatid na'],
+  en: [
+    "Seeds Planted",
+    "Fertilized",
+    "Growing",
+    "Ready for Harvest",
+    "Harvested",
+    "Delivered",
+  ],
+  tl: [
+    "Naitanim na ang Binhi",
+    "Binigyan ng Pataba",
+    "Lumalaki na",
+    "Handa nang Anihin",
+    "Na-ani na",
+    "Naihatid na",
+  ],
 };
 
 const COMPLAINT_MENU = {
@@ -128,22 +157,23 @@ const INVALID = {
 
 export default function MobileView() {
   // ── Juan dela Cruz — f1, member of coop1 (Quezon Farmers Cooperative) ───────
-  const FARMER_ID = 'f1';
-  const COOP_ID   = 'coop1';
+  const FARMER_ID = "f1";
+  const COOP_ID = "coop1";
 
-  const contracts             = useAppStore((s) => s.contracts);
-  const updateCropStatus      = useAppStore((s) => s.updateCropStatus);
+  const contracts = useAppStore((s) => s.contracts);
+  const updateCropStatus = useAppStore((s) => s.updateCropStatus);
   const updateFarmerSmsStatus = useAppStore((s) => s.updateFarmerSmsStatus);
-  const cooperatives          = useAppStore((s) => s.cooperatives);
+  const cooperatives = useAppStore((s) => s.cooperatives);
 
   const farmer = cooperatives
     .find((c) => c.id === COOP_ID)
     ?.members.find((f) => f.id === FARMER_ID);
 
   // Find his contract — the one matched to his cooperative
-  const activeContract = contracts.find((c) =>
-    ['accepted', 'funded', 'in_progress', 'matched'].includes(c.status) &&
-    c.matchedCooperative?.id === COOP_ID
+  const activeContract = contracts.find(
+    (c) =>
+      ["accepted", "funded", "in_progress", "matched"].includes(c.status) &&
+      c.matchedCooperative?.id === COOP_ID,
   );
 
   // Build dynamic contract replies from real store data
@@ -154,27 +184,37 @@ export default function MobileView() {
         : "Hindi namin mahanap ang aktibong kontrata sa inyong account. Mangyaring makipag-ugnayan sa inyong coordinator. 📋";
     }
 
-    const { crop, status, targetDate, escrowAmount, volumeKg, cropStatus, matchedCooperative } = activeContract;
-    const isActive = ['accepted', 'funded', 'in_progress'].includes(status);
+    const {
+      crop,
+      status,
+      targetDate,
+      escrowAmount,
+      volumeKg,
+      cropStatus,
+      matchedCooperative,
+    } = activeContract;
+    const isActive = ["accepted", "funded", "in_progress"].includes(status);
     const perFarmer = matchedCooperative
       ? Math.floor(escrowAmount / (matchedCooperative.members.length || 1))
       : escrowAmount;
-    const formattedDate = new Date(targetDate).toLocaleDateString('en-PH', {
-      year: 'numeric', month: 'long', day: 'numeric',
+    const formattedDate = new Date(targetDate).toLocaleDateString("en-PH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
     const statusLabels: Record<string, { en: string; tl: string }> = {
-      matched:     { en: 'Matched',     tl: 'Nakatugma' },
-      accepted:    { en: 'Accepted',    tl: 'Tinanggap' },
-      funded:      { en: 'Funded',      tl: 'Pondo na' },
-      in_progress: { en: 'In Progress', tl: 'Isinasagawa' },
-      completed:   { en: 'Completed',   tl: 'Nakumpleto' },
+      matched: { en: "Matched", tl: "Nakatugma" },
+      accepted: { en: "Accepted", tl: "Tinanggap" },
+      funded: { en: "Funded", tl: "Pondo na" },
+      in_progress: { en: "In Progress", tl: "Isinasagawa" },
+      completed: { en: "Completed", tl: "Nakumpleto" },
     };
     const statusLabel = statusLabels[status]?.[lang] ?? status;
 
     if (question === 1) {
       return lang === "en"
-        ? `Your contract for ${crop} is currently ${isActive ? 'ACTIVE ✅' : 'not yet active'}.\nStatus: ${statusLabel}\nCrop Status: ${cropStatus.replace(/_/g, ' ')}`
-        : `Ang inyong kontrata para sa ${crop} ay kasalukuyang ${isActive ? 'AKTIBO ✅' : 'hindi pa aktibo'}.\nStatus: ${statusLabel}\nKalagayan ng Pananim: ${cropStatus.replace(/_/g, ' ')}`;
+        ? `Your contract for ${crop} is currently ${isActive ? "ACTIVE ✅" : "not yet active"}.\nStatus: ${statusLabel}\nCrop Status: ${cropStatus.replace(/_/g, " ")}`
+        : `Ang inyong kontrata para sa ${crop} ay kasalukuyang ${isActive ? "AKTIBO ✅" : "hindi pa aktibo"}.\nStatus: ${statusLabel}\nKalagayan ng Pananim: ${cropStatus.replace(/_/g, " ")}`;
     }
     if (question === 2) {
       return lang === "en"
@@ -197,21 +237,25 @@ export default function MobileView() {
     }
     const { crop, cropStatus, volumeKg, targetDate } = activeContract;
     const currentLabel: Record<string, { en: string; tl: string }> = {
-      pending:           { en: "Pending",           tl: "Nakabinbin" },
-      seeds_planted:     { en: "Seeds Planted",     tl: "Naitanim na ang Binhi" },
-      fertilized:        { en: "Fertilized",        tl: "Binigyan ng Pataba" },
-      growing:           { en: "Growing",           tl: "Lumalaki na" },
+      pending: { en: "Pending", tl: "Nakabinbin" },
+      seeds_planted: { en: "Seeds Planted", tl: "Naitanim na ang Binhi" },
+      fertilized: { en: "Fertilized", tl: "Binigyan ng Pataba" },
+      growing: { en: "Growing", tl: "Lumalaki na" },
       ready_for_harvest: { en: "Ready for Harvest", tl: "Handa nang Anihin" },
-      harvested:         { en: "Harvested",         tl: "Na-ani na" },
-      delivered:         { en: "Delivered",         tl: "Naihatid na" },
+      harvested: { en: "Harvested", tl: "Na-ani na" },
+      delivered: { en: "Delivered", tl: "Naihatid na" },
     };
-    const formattedDate = new Date(targetDate).toLocaleDateString('en-PH', {
-      year: 'numeric', month: 'long', day: 'numeric',
+    const formattedDate = new Date(targetDate).toLocaleDateString("en-PH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
     const label = currentLabel[cropStatus]?.[lang] ?? cropStatus;
 
     // Build only the next valid statuses (forward only)
-    const currentIdx = CROP_STATUS_ORDER.indexOf(cropStatus as typeof CROP_STATUS_ORDER[number]);
+    const currentIdx = CROP_STATUS_ORDER.indexOf(
+      cropStatus as (typeof CROP_STATUS_ORDER)[number],
+    );
     const nextStatuses = CROP_STATUS_ORDER.slice(currentIdx + 1);
     const nextLines = nextStatuses.map((s, i) => {
       const lbl = CROP_STATUS_LABELS[lang][CROP_STATUS_ORDER.indexOf(s)];
@@ -220,12 +264,12 @@ export default function MobileView() {
 
     const hasNext = nextLines.length > 0;
     const updatePrompt = hasNext
-      ? (lang === "en"
-          ? `\n\nUpdate status to:\n\n${nextLines.join('\n')}\n0 - Back`
-          : `\n\nI-update ang status sa:\n\n${nextLines.join('\n')}\n0 - Bumalik`)
-      : (lang === "en"
-          ? `\n\nYour crops are fully delivered. No further updates needed. ✅\n\n0 - Back`
-          : `\n\nAng inyong pananim ay naihatid na. Walang karagdagang update. ✅\n\n0 - Bumalik`);
+      ? lang === "en"
+        ? `\n\nUpdate status to:\n\n${nextLines.join("\n")}\n0 - Back`
+        : `\n\nI-update ang status sa:\n\n${nextLines.join("\n")}\n0 - Bumalik`
+      : lang === "en"
+        ? `\n\nYour crops are fully delivered. No further updates needed. ✅\n\n0 - Back`
+        : `\n\nAng inyong pananim ay naihatid na. Walang karagdagang update. ✅\n\n0 - Bumalik`;
 
     return lang === "en"
       ? `Your current contract:\n\nCrop: ${crop}\nVolume: ${volumeKg.toLocaleString()} kg\nTarget date: ${formattedDate}\nCurrent status: ${label}${updatePrompt}`
@@ -235,35 +279,41 @@ export default function MobileView() {
   // Build the cropStatusMap dynamically based on current status (forward-only)
   const getForwardStatusMap = (): Record<number, CropStatus> => {
     if (!activeContract) return {};
-    const currentIdx = CROP_STATUS_ORDER.indexOf(activeContract.cropStatus as typeof CROP_STATUS_ORDER[number]);
+    const currentIdx = CROP_STATUS_ORDER.indexOf(
+      activeContract.cropStatus as (typeof CROP_STATUS_ORDER)[number],
+    );
     const nextStatuses = CROP_STATUS_ORDER.slice(currentIdx + 1);
     return Object.fromEntries(nextStatuses.map((s, i) => [i, s]));
   };
 
   const [messages, setMessages] = useState<Message[]>([
-    { id: 1, from: "kontratani", text: LANG_PROMPT },
+    { id: 1, from: "PalAi", text: LANG_PROMPT },
   ]);
-  const [step, setStep]               = useState<Step>("lang");
-  const [lang, setLang]               = useState<Lang>("en");
+  const [step, setStep] = useState<Step>("lang");
+  const [lang, setLang] = useState<Lang>("en");
   const [complaintType, setComplaintType] = useState<number>(0);
-  const [supportType, setSupportType]     = useState<number>(0);
-  const [input, setInput]             = useState("");
-  const [seenIds, setSeenIds]         = useState<Set<string>>(new Set());
-  const bottomRef                     = useRef<HTMLDivElement>(null);
+  const [supportType, setSupportType] = useState<number>(0);
+  const [input, setInput] = useState("");
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   // ── Listen for localStorage broadcast from manager tab ──────────────────────
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key !== STORAGE_KEY || !e.newValue) return;
       try {
-        const payload = JSON.parse(e.newValue) as { id: string; text: string; time: string };
+        const payload = JSON.parse(e.newValue) as {
+          id: string;
+          text: string;
+          time: string;
+        };
         if (seenIds.has(payload.id)) return;
         setSeenIds((prev) => new Set([...prev, payload.id]));
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now() + Math.random(),
-            from: "kontratani",
+            from: "PalAi",
             text: payload.text,
             isBroadcast: true,
           },
@@ -271,16 +321,19 @@ export default function MobileView() {
       } catch {}
     };
 
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, [seenIds]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const addMsg = (text: string, from: "kontratani" | "farmer") => {
-    setMessages((prev) => [...prev, { id: Date.now() + Math.random(), text, from }]);
+  const addMsg = (text: string, from: "PalAi" | "farmer") => {
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now() + Math.random(), text, from },
+    ]);
   };
 
   const handleSend = () => {
@@ -293,24 +346,44 @@ export default function MobileView() {
 
   const process = (val: string) => {
     if (step === "lang") {
-      if (val === "1") { setLang("en"); setStep("main"); addMsg(MAIN_MENU.en, "kontratani"); }
-      else if (val === "2") { setLang("tl"); setStep("main"); addMsg(MAIN_MENU.tl, "kontratani"); }
-      else addMsg("Please type 1 or 2. / Mag-type ng 1 o 2.", "kontratani");
+      if (val === "1") {
+        setLang("en");
+        setStep("main");
+        addMsg(MAIN_MENU.en, "PalAi");
+      } else if (val === "2") {
+        setLang("tl");
+        setStep("main");
+        addMsg(MAIN_MENU.tl, "PalAi");
+      } else addMsg("Please type 1 or 2. / Mag-type ng 1 o 2.", "PalAi");
       return;
     }
 
     if (step === "main") {
-      if (val === "1") { setStep("crop_info"); addMsg(getCropInfoMsg(lang), "kontratani"); }
-      else if (val === "2") { setStep("complaint"); addMsg(COMPLAINT_MENU[lang], "kontratani"); }
-      else if (val === "3") { setStep("support"); addMsg(SUPPORT_MENU[lang], "kontratani"); }
-      else if (val === "4") { setStep("contract"); addMsg(CONTRACT_MENU[lang], "kontratani"); }
-      else if (val === "0") { setStep("lang"); addMsg(LANG_PROMPT, "kontratani"); }
-      else addMsg(INVALID[lang], "kontratani");
+      if (val === "1") {
+        setStep("crop_info");
+        addMsg(getCropInfoMsg(lang), "PalAi");
+      } else if (val === "2") {
+        setStep("complaint");
+        addMsg(COMPLAINT_MENU[lang], "PalAi");
+      } else if (val === "3") {
+        setStep("support");
+        addMsg(SUPPORT_MENU[lang], "PalAi");
+      } else if (val === "4") {
+        setStep("contract");
+        addMsg(CONTRACT_MENU[lang], "PalAi");
+      } else if (val === "0") {
+        setStep("lang");
+        addMsg(LANG_PROMPT, "PalAi");
+      } else addMsg(INVALID[lang], "PalAi");
       return;
     }
 
     if (step === "crop_info") {
-      if (val === "0") { setStep("main"); addMsg(MAIN_MENU[lang], "kontratani"); return; }
+      if (val === "0") {
+        setStep("main");
+        addMsg(MAIN_MENU[lang], "PalAi");
+        return;
+      }
       const forwardMap = getForwardStatusMap();
       const idx = parseInt(val) - 1;
       const newStatus = forwardMap[idx];
@@ -318,45 +391,57 @@ export default function MobileView() {
         updateCropStatus(activeContract.id, newStatus);
 
         const smsMap: Record<string, FarmerSmsStatus> = {
-          seeds_planted:     'planted',
-          fertilized:        'planted',
-          growing:           'planted',
-          ready_for_harvest: 'planted',
-          harvested:         'harvested',
-          delivered:         'harvested',
+          seeds_planted: "planted",
+          fertilized: "planted",
+          growing: "planted",
+          ready_for_harvest: "planted",
+          harvested: "harvested",
+          delivered: "harvested",
         };
-        updateFarmerSmsStatus(activeContract.id, FARMER_ID, smsMap[newStatus] ?? 'planted');
+        updateFarmerSmsStatus(
+          activeContract.id,
+          FARMER_ID,
+          smsMap[newStatus] ?? "planted",
+        );
 
         // Write to localStorage so buyer portal tab syncs the crop status
-        localStorage.setItem(CROP_STATUS_KEY, JSON.stringify({
-          contractId: activeContract.id,
-          cropStatus: newStatus,
-          ts: Date.now(),
-        }));
+        localStorage.setItem(
+          CROP_STATUS_KEY,
+          JSON.stringify({
+            contractId: activeContract.id,
+            cropStatus: newStatus,
+            ts: Date.now(),
+          }),
+        );
 
         const labelMap = CROP_STATUS_LABELS[lang];
         const newLabel = labelMap[CROP_STATUS_ORDER.indexOf(newStatus)];
-        const confirm = lang === "en"
-          ? `✅ Status updated to: ${newLabel}\n\nThank you, Juan! Your coordinator has been notified. 🌾`
-          : `✅ Na-update ang status sa: ${newLabel}\n\nSalamat, Juan! Naabisuhan na ang inyong coordinator. 🌾`;
-        addMsg(confirm, "kontratani");
-        setTimeout(() => addMsg(MAIN_MENU[lang], "kontratani"), 700);
+        const confirm =
+          lang === "en"
+            ? `✅ Status updated to: ${newLabel}\n\nThank you, Juan! Your coordinator has been notified. 🌾`
+            : `✅ Na-update ang status sa: ${newLabel}\n\nSalamat, Juan! Naabisuhan na ang inyong coordinator. 🌾`;
+        addMsg(confirm, "PalAi");
+        setTimeout(() => addMsg(MAIN_MENU[lang], "PalAi"), 700);
         setStep("main");
       } else {
-        addMsg(INVALID[lang], "kontratani");
+        addMsg(INVALID[lang], "PalAi");
       }
       return;
     }
 
     if (step === "support") {
-      if (val === "0") { setStep("main"); addMsg(MAIN_MENU[lang], "kontratani"); return; }
+      if (val === "0") {
+        setStep("main");
+        addMsg(MAIN_MENU[lang], "PalAi");
+        return;
+      }
       const idx = parseInt(val);
       if (idx >= 1 && idx <= 4) {
         setSupportType(idx);
         setStep("support_detail");
-        addMsg(SUPPORT_FOLLOWUP[idx][lang], "kontratani");
+        addMsg(SUPPORT_FOLLOWUP[idx][lang], "PalAi");
       } else {
-        addMsg(INVALID[lang], "kontratani");
+        addMsg(INVALID[lang], "PalAi");
       }
       return;
     }
@@ -365,9 +450,9 @@ export default function MobileView() {
       const idx = parseInt(val);
       if (idx >= 1 && idx <= 4) {
         setStep("support_urgency");
-        addMsg(SUPPORT_URGENCY[lang], "kontratani");
+        addMsg(SUPPORT_URGENCY[lang], "PalAi");
       } else {
-        addMsg(INVALID[lang], "kontratani");
+        addMsg(INVALID[lang], "PalAi");
       }
       return;
     }
@@ -375,37 +460,45 @@ export default function MobileView() {
     if (step === "support_urgency") {
       const idx = parseInt(val);
       if (idx >= 1 && idx <= 3) {
-        addMsg(SUPPORT_RESOLUTION[lang], "kontratani");
-        setTimeout(() => addMsg(MAIN_MENU[lang], "kontratani"), 800);
+        addMsg(SUPPORT_RESOLUTION[lang], "PalAi");
+        setTimeout(() => addMsg(MAIN_MENU[lang], "PalAi"), 800);
         setStep("main");
       } else {
-        addMsg(INVALID[lang], "kontratani");
+        addMsg(INVALID[lang], "PalAi");
       }
       return;
     }
 
     if (step === "contract") {
-      if (val === "0") { setStep("main"); addMsg(MAIN_MENU[lang], "kontratani"); return; }
+      if (val === "0") {
+        setStep("main");
+        addMsg(MAIN_MENU[lang], "PalAi");
+        return;
+      }
       const idx = parseInt(val);
       if (idx >= 1 && idx <= 3) {
-        addMsg(getContractReply(idx, lang), "kontratani");
-        setTimeout(() => addMsg(MAIN_MENU[lang], "kontratani"), 800);
+        addMsg(getContractReply(idx, lang), "PalAi");
+        setTimeout(() => addMsg(MAIN_MENU[lang], "PalAi"), 800);
         setStep("main");
       } else {
-        addMsg(INVALID[lang], "kontratani");
+        addMsg(INVALID[lang], "PalAi");
       }
       return;
     }
 
     if (step === "complaint") {
-      if (val === "0") { setStep("main"); addMsg(MAIN_MENU[lang], "kontratani"); return; }
+      if (val === "0") {
+        setStep("main");
+        addMsg(MAIN_MENU[lang], "PalAi");
+        return;
+      }
       const idx = parseInt(val);
       if (idx >= 1 && idx <= 7) {
         setComplaintType(idx);
         setStep("complaint_detail");
-        addMsg(COMPLAINT_FOLLOWUP[idx][lang], "kontratani");
+        addMsg(COMPLAINT_FOLLOWUP[idx][lang], "PalAi");
       } else {
-        addMsg(INVALID[lang], "kontratani");
+        addMsg(INVALID[lang], "PalAi");
       }
       return;
     }
@@ -414,9 +507,9 @@ export default function MobileView() {
       const idx = parseInt(val);
       if (idx >= 1 && idx <= 3) {
         setStep("complaint_when");
-        addMsg(WHEN_QUESTION[lang], "kontratani");
+        addMsg(WHEN_QUESTION[lang], "PalAi");
       } else {
-        addMsg(INVALID[lang], "kontratani");
+        addMsg(INVALID[lang], "PalAi");
       }
       return;
     }
@@ -424,11 +517,11 @@ export default function MobileView() {
     if (step === "complaint_when") {
       const idx = parseInt(val);
       if (idx >= 1 && idx <= 4) {
-        addMsg(RESOLUTION[lang], "kontratani");
-        setTimeout(() => addMsg(MAIN_MENU[lang], "kontratani"), 800);
+        addMsg(RESOLUTION[lang], "PalAi");
+        setTimeout(() => addMsg(MAIN_MENU[lang], "PalAi"), 800);
         setStep("main");
       } else {
-        addMsg(INVALID[lang], "kontratani");
+        addMsg(INVALID[lang], "PalAi");
       }
       return;
     }
@@ -438,7 +531,7 @@ export default function MobileView() {
         lang === "en"
           ? "This session has ended. Please reload to start again."
           : "Tapos na ang session. I-reload para magsimula ulit.",
-        "kontratani"
+        "PalAi",
       );
     }
   };
@@ -450,19 +543,24 @@ export default function MobileView() {
   return (
     <div style={styles.page}>
       <div style={styles.phone}>
-
         <div style={styles.header}>
           <div style={styles.avatar}>K</div>
           <div style={{ flex: 1 }}>
-            <div style={styles.name}>KontratAni</div>
+            <div style={styles.name}>PalAi</div>
             <div style={styles.sub}>Text Message</div>
           </div>
           <div style={styles.farmerTag}>
             <div style={styles.farmerInitials}>
-              {(farmer?.name ?? 'JD').split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+              {(farmer?.name ?? "JD")
+                .split(" ")
+                .map((n: string) => n[0])
+                .slice(0, 2)
+                .join("")}
             </div>
             <div>
-              <div style={styles.farmerName}>{farmer?.name ?? 'Juan dela Cruz'}</div>
+              <div style={styles.farmerName}>
+                {farmer?.name ?? "Juan dela Cruz"}
+              </div>
               <div style={styles.farmerSub}>Quezon Farmers Coop</div>
             </div>
           </div>
@@ -474,13 +572,16 @@ export default function MobileView() {
               key={msg.id}
               style={{
                 display: "flex",
-                justifyContent: msg.from === "farmer" ? "flex-end" : "flex-start",
+                justifyContent:
+                  msg.from === "farmer" ? "flex-end" : "flex-start",
                 marginBottom: 8,
               }}
             >
               <div
                 style={{
-                  ...(msg.from === "farmer" ? styles.farmerBubble : styles.kontrataniBubble),
+                  ...(msg.from === "farmer"
+                    ? styles.farmerBubble
+                    : styles.kontrataniBubble),
                   ...(msg.isBroadcast ? styles.broadcastBubble : {}),
                 }}
               >
@@ -488,7 +589,10 @@ export default function MobileView() {
                   <div style={styles.broadcastLabel}>📡 Manager Broadcast</div>
                 )}
                 {msg.text.split("\n").map((line, i, arr) => (
-                  <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+                  <span key={i}>
+                    {line}
+                    {i < arr.length - 1 && <br />}
+                  </span>
                 ))}
               </div>
             </div>
@@ -515,7 +619,6 @@ export default function MobileView() {
             ➤
           </button>
         </div>
-
       </div>
     </div>
   );
