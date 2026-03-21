@@ -1,13 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { useAppStore } from "@/store/useAppStore";
-import { User, Inbox, Sprout, Wallet, LogOut } from "lucide-react";
+import { User, Inbox, Sprout, Wallet, BarChart3, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { id: "profile", label: "Profile & Land", icon: User },
+  { id: "ai-reports", label: "AI Reports", icon: BarChart3 },
   { id: "inbox", label: "Contract Inbox", icon: Inbox },
   { id: "contract progress", label: "Contract Progress", icon: Sprout },
-  { id: "direct payout", label: "Direct Payout", icon: Wallet }
+  { id: "direct payout", label: "Direct Payout", icon: Wallet },
 ];
 
 export function FarmerSidebar() {
@@ -17,8 +18,8 @@ export function FarmerSidebar() {
 
   // Reusable logout function
   const handleLogout = () => {
-    localStorage.removeItem('palai_user_role'); 
-    navigate('/'); 
+    localStorage.removeItem("palai_user_role");
+    navigate("/");
   };
 
   return (
@@ -73,7 +74,9 @@ export function FarmerSidebar() {
 
       <div className="border-t border-sidebar-border px-6 py-4">
         {/* Changed these to foreground to ensure readability */}
-        <p className="text-xs font-medium text-sidebar-foreground">Luzviminda Garcia</p>
+        <p className="text-xs font-medium text-sidebar-foreground">
+          Luzviminda Garcia
+        </p>
         <p className="text-xs text-sidebar-foreground/70">Solo Farmer</p>
       </div>
     </aside>

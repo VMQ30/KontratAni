@@ -4,6 +4,8 @@ import { ProfileView } from "@/components/farmer/ProfileView";
 import { ContractInboxView } from "@/components/manager/ContractInboxView";
 import { useAppStore } from "@/store/useAppStore";
 import { ContractProgress } from "./ContractProgress";
+import { AiReportView } from "@/components/manager/AiReportView";
+import { AiChatbot } from "@/components/manager/AiChatbot";
 import { DirectPayoutView } from "./DirectPayoutView";
 
 export function FarmerLayout() {
@@ -24,6 +26,8 @@ export function FarmerLayout() {
         return <ContractProgress />;
       case "direct payout":
         return <DirectPayoutView />;
+      case "ai-reports":
+        return <AiReportView />;
       default:
         return <ProfileView />;
     }
@@ -33,6 +37,7 @@ export function FarmerLayout() {
     <div className="min-h-screen bg-background">
       <FarmerSidebar />
       <main className="ml-64 min-h-screen p-8">{renderView()}</main>
+      <AiChatbot />
     </div>
   );
 }
