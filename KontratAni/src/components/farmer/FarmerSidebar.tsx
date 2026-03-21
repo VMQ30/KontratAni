@@ -1,10 +1,14 @@
+//FarmerSidebar.tsx
+
 import { useAppStore } from "@/store/useAppStore";
-import { User, Inbox, Sprout } from "lucide-react";
+import { User, Inbox, Sprout, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { id: "profile", label: "Profile & Land", icon: User },
   { id: "inbox", label: "Contract Inbox", icon: Inbox },
+  { id: "contract progress", label: "Contract Progress", icon: Sprout },
+  { id: "direct payout", label: "Direct Payout", icon: Wallet }
 ];
 
 export function FarmerSidebar() {
