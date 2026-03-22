@@ -243,7 +243,7 @@ export function AiReportView() {
       {/* Report Type Selector */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="flex-1 space-y-2">
               <label className="text-sm font-medium text-foreground">
                 Report Type
