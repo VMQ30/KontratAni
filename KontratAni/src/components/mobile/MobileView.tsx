@@ -156,7 +156,6 @@ const INVALID = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MobileView() {
-  // ── Juan dela Cruz — f1, member of coop1 (Quezon Farmers Cooperative) ───────
   const FARMER_ID = "f1";
   const COOP_ID = "coop1";
 
@@ -169,7 +168,6 @@ export default function MobileView() {
     .find((c) => c.id === COOP_ID)
     ?.members.find((f) => f.id === FARMER_ID);
 
-  // Find his contract — the one matched to his cooperative
   const activeContract = contracts.find(
     (c) =>
       ["accepted", "funded", "in_progress", "matched"].includes(c.status) &&
@@ -297,7 +295,6 @@ export default function MobileView() {
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // ── Listen for localStorage broadcast from manager tab ──────────────────────
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key !== STORAGE_KEY || !e.newValue) return;
