@@ -1,3 +1,5 @@
+// PayoutView.tsx (Manager)
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,7 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppStore } from '@/store/useAppStore';
-import { Wallet, Check, Banknote, Smartphone, ArrowDownToLine } from 'lucide-react';
+import { Wallet, Check, Banknote, Smartphone, ArrowDownToLine,
+  // ── NEW: verification-state icons ──────────────────────────────────────────
+  ShieldAlert, Hourglass, ShieldCheck, Lock,
+  // ── END ────────────────────────────────────────────────────────────────────
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -29,7 +35,30 @@ export function PayoutView() {
   const perFarmerAmount = contract ? Math.floor(contract.escrowAmount / farmers.length) : 0;
   const totalDistributed = paidFarmers.size * perFarmerAmount;
 
+  // ── NEW: derive payout eligibility from verification fields ─────────────────
+  // A payout should only be distributable when:
+  //   1. The buyer has explicitly confirmed delivery (buyerConfirmedDelivery)
+  //   2. There is no active dispute (disputeFlag)
+  // Without this gate, a manager could distribute escrow on an unconfirmed or
+  // disputed contract, releasing funds before the buyer's dual sign-off.
+  const isEscrowFrozen   = contract?.disputeFlag ?? false;
+  const isBuyerConfirmed = contract?.buyerConfirmedDelivery ?? false;
+  const isPayoutEligible = isBuyerConfirmed && !isEscrowFrozen;
+  // ── END ────────────────────────────────────────────────────────────────────
+
   const handleDistribute = () => {
+    // ── NEW: guard clause — block distribution if not buyer-confirmed or disputed
+    // previous: handleDistribute had no verification checks at all.
+    if (!isPayoutEligible) {
+      if (isEscrowFrozen) {
+        toast.error('Cannot distribute — escrow is frozen due to a dispute.');
+      } else {
+        toast.error('Cannot distribute — awaiting buyer delivery confirmation.');
+      }
+      return;
+    }
+    // ── END ────────────────────────────────────────────────────────────────────
+
     setDistributing(true);
     farmers.forEach((f, i) => {
       setTimeout(() => {
@@ -81,13 +110,69 @@ export function PayoutView() {
             setPayoutMethods(init);
           }}>
             {c.crop}
+            {/* ── NEW: append status indicator to contract tab ────────────────── */}
+            {c.disputeFlag && (
+              <ShieldAlert className="ml-1.5 h-3.5 w-3.5 text-red-400" />
+            )}
+            {!c.disputeFlag && !c.buyerConfirmedDelivery && (
+              <Hourglass className="ml-1.5 h-3.5 w-3.5 text-amber-400" />
+            )}
+            {c.buyerConfirmedDelivery && !c.disputeFlag && (
+              <ShieldCheck className="ml-1.5 h-3.5 w-3.5 text-emerald-400" />
+            )}
+            {/* ── END ────────────────────────────────────────────────────────── */}
           </Button>
         ))}
       </div>
 
       {contract && (
         <>
-          {/* Summary Cards */}
+          {/* ── NEW: escrow status banner — shows before summary cards ───────────
+              Informs the manager of the exact reason why payouts are locked or
+              available, replacing the previous silent failure mode.
+          ── END ── */}
+          {isEscrowFrozen && (
+            <div className="flex items-start gap-3 rounded-xl border-2 border-red-300 bg-red-50 p-4">
+              <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+              <div>
+                <p className="font-semibold text-red-800">Escrow Frozen — Dispute Under Review</p>
+                <p className="mt-0.5 text-sm text-red-700">
+                  A dispute has been raised on this contract. Funds are locked until
+                  PalAI admin resolves the case. No payouts can be distributed.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!isEscrowFrozen && !isBuyerConfirmed && (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <Hourglass className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+              <div>
+                <p className="font-semibold text-amber-800">Awaiting Buyer Delivery Confirmation</p>
+                <p className="mt-0.5 text-sm text-amber-700">
+                  The buyer must confirm that goods were delivered before escrow can
+                  be released. This is a required dual sign-off to protect all parties.
+                  Please wait for the buyer to confirm in their portal.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!isEscrowFrozen && isBuyerConfirmed && (
+            <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+              <div>
+                <p className="font-semibold text-emerald-800">Buyer Confirmed — Payout Unlocked</p>
+                <p className="mt-0.5 text-sm text-emerald-700">
+                  The buyer has co-confirmed delivery. You may now distribute escrow
+                  funds to your member farmers.
+                </p>
+              </div>
+            </div>
+          )}
+          {/* ── END ────────────────────────────────────────────────────────────── */}
+
+          {/* Summary Cards — unchanged */}
           <div className="grid grid-cols-3 gap-4">
             <Card>
               <CardContent className="p-5">
@@ -139,7 +224,7 @@ export function PayoutView() {
             </Card>
           </div>
 
-          {/* Farmer Payout Table */}
+          {/* Farmer Payout Table — unchanged */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Farmer Payouts</CardTitle>
@@ -168,7 +253,10 @@ export function PayoutView() {
                           <Select
                             value={payoutMethods[f.id] || 'gcash'}
                             onValueChange={(v) => setPayoutMethods(prev => ({ ...prev, [f.id]: v }))}
-                            disabled={isPaid}
+                            // ── MODIFIED: also disable select when escrow is frozen or unconfirmed ─
+                            // previous: disabled={isPaid}
+                            disabled={isPaid || !isPayoutEligible}
+                            // ── END ────────────────────────────────────────────────────────────────
                           >
                             <SelectTrigger className="w-28">
                               <SelectValue />
@@ -188,17 +276,26 @@ export function PayoutView() {
                         </TableCell>
                         <TableCell>
                           {isPaid ? (
-                            <motion.div
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              className="inline-flex"
-                            >
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="inline-flex">
                               <Badge className="gap-1 bg-primary text-primary-foreground">
                                 <Check className="h-3 w-3" /> Paid
                               </Badge>
                             </motion.div>
                           ) : (
-                            <Badge variant="outline" className="text-muted-foreground">Pending</Badge>
+                            // ── MODIFIED: badge reflects frozen/awaiting states ──────────────────
+                            // previous: always showed "Pending" regardless of escrow lock state.
+                            isEscrowFrozen ? (
+                              <Badge variant="outline" className="border-red-200 text-red-600">
+                                <Lock className="mr-1 h-3 w-3" /> Frozen
+                              </Badge>
+                            ) : !isBuyerConfirmed ? (
+                              <Badge variant="outline" className="border-amber-200 text-amber-600">
+                                <Hourglass className="mr-1 h-3 w-3" /> Awaiting
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-muted-foreground">Pending</Badge>
+                            )
+                            // ── END ──────────────────────────────────────────────────────────────
                           )}
                         </TableCell>
                       </TableRow>
@@ -209,15 +306,30 @@ export function PayoutView() {
             </CardContent>
           </Card>
 
+          {/* ── MODIFIED: distribute button shows appropriate locked state ─────────
+              previous: only disabled when distributing || all paid.
+              Now also locked (with icon + tooltip) when escrow is frozen or
+              buyer hasn't confirmed, and shows the reason inline.
+          ── END ── */}
           <Button
             className="w-full gap-2"
             size="lg"
             onClick={handleDistribute}
-            disabled={distributing || paidFarmers.size === farmers.length}
+            disabled={distributing || paidFarmers.size === farmers.length || !isPayoutEligible}
           >
-            <Wallet className="h-4 w-4" />
-            {paidFarmers.size === farmers.length ? 'All Payouts Complete' : distributing ? 'Distributing...' : 'Distribute Payouts'}
+            {isEscrowFrozen ? (
+              <><ShieldAlert className="h-4 w-4" /> Payouts Locked — Dispute Active</>
+            ) : !isBuyerConfirmed ? (
+              <><Hourglass className="h-4 w-4" /> Waiting for Buyer Confirmation</>
+            ) : paidFarmers.size === farmers.length ? (
+              <><Check className="h-4 w-4" /> All Payouts Complete</>
+            ) : distributing ? (
+              <><Wallet className="h-4 w-4" /> Distributing...</>
+            ) : (
+              <><Wallet className="h-4 w-4" /> Distribute Payouts</>
+            )}
           </Button>
+          {/* ── END ────────────────────────────────────────────────────────────── */}
         </>
       )}
     </div>

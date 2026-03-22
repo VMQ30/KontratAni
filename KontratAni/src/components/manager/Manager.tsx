@@ -8,8 +8,9 @@ import { PayoutView } from "@/components/manager/PayoutView";
 import { AiReportView } from "@/components/manager/AiReportView";
 import { AiChatbot } from "@/components/manager/AiChatbot";
 import { ContractAiAssistant } from "@/components/manager/ContractAiAssistant";
+import { ContractProgress } from "@/components/farmer/ContractProgress";
 import { useAppStore } from "@/store/useAppStore";
-
+import { DemoControlPanel } from "@/components/DemoControlPanel.tsx";
 const Manager = () => {
   const activeView = useAppStore((s) => s.activeView);
   const setActiveView = useAppStore((s) => s.setActiveView);
@@ -28,6 +29,8 @@ const Manager = () => {
         return <ContractAiAssistant />;
       case "allocation":
         return <QuotaAllocationView />;
+      case "contract progress":
+        return <ContractProgress />;
       case "sms-hub":
         return <SmsHubView />;
       case "payouts":
@@ -44,6 +47,7 @@ const Manager = () => {
       <ManagerSidebar />
       <main className="ml-64 min-h-screen p-8">{renderView()}</main>
       <AiChatbot />
+      <DemoControlPanel />
     </div>
   );
 };

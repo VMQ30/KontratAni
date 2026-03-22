@@ -19,6 +19,7 @@ const navItems = [
   { id: "inbox", label: "Contract Inbox", icon: Inbox },
   { id: "ai-tracker", label: "AI Contract Tracker", icon: Brain },
   { id: "allocation", label: "Quota Allocation", icon: Sliders },
+  {id: "contract progress", label: "Contract Progress", icon: Sprout},
   { id: "sms-hub", label: "SMS & Monitoring", icon: MessageSquare },
   { id: "payouts", label: "Payouts", icon: Wallet },
 ];

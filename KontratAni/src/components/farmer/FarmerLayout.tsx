@@ -8,6 +8,7 @@ import { AiReportView } from "@/components/manager/AiReportView";
 import { AiChatbot } from "@/components/manager/AiChatbot";
 import { ContractAiAssistant } from "@/components/manager/ContractAiAssistant";
 import { DirectPayoutView } from "./DirectPayoutView";
+import { DemoControlPanel } from "@/components/DemoControlPanel.tsx";
 
 export function FarmerLayout() {
   const activeView = useAppStore((s) => s.activeView);
@@ -41,6 +42,7 @@ export function FarmerLayout() {
       <FarmerSidebar />
       <main className="ml-64 min-h-screen p-8">{renderView()}</main>
       <AiChatbot />
+      <DemoControlPanel />
     </div>
   );
 }

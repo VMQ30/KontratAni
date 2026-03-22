@@ -5,6 +5,7 @@ import { DashboardView } from './DashboardView';
 import { DemandView } from './DemandView';
 import { ContractsView } from './ContractsView';
 import { PaymentsView } from './PaymentsView';
+import { DemoControlPanel } from "@/components/DemoControlPanel.tsx";
 
 export default function BuyerLayout() {
   const { activeView } = useAppStore();
@@ -18,6 +19,7 @@ export default function BuyerLayout() {
         {activeView === 'contracts' && <ContractsView />}
         {activeView === 'payments' && <PaymentsView />}
       </main>
+      <DemoControlPanel />
     </div>
   );
 }
