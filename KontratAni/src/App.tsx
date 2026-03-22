@@ -9,14 +9,7 @@ import NotFound from "./pages/NotFound.tsx";
 import BuyerLayout from "@/components/buyer/BuyerLayout.tsx";
 import Manager from "@/components/manager/Manager.tsx";
 import { FarmerLayout } from "@/components/farmer/FarmerLayout.tsx";
-import MobileView from "@/components/mobile/MobileView.tsx"; // 👈 i-add ito
-
-// placeholder muna itech connect connect nalang
-const CoopDashboard = () => (
-  <div className="p-10 text-2xl font-bold">
-    🤝 Cooperative Dashboard (Coming Soon)
-  </div>
-);
+import MobileView from "@/components/mobile/MobileView.tsx";
 
 const queryClient = new QueryClient();
 

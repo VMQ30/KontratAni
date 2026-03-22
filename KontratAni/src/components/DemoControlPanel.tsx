@@ -1,16 +1,3 @@
-// DemoControlPanel.tsx
-//
-// A self-contained floating panel for simulating the full verification lifecycle
-// during demos. Zero changes required to any existing file — just add once to
-// your root layout:
-//
-//   import { DemoControlPanel } from "@/components/DemoControlPanel";
-//   // inside your root App / layout JSX, as the last child:
-//   <DemoControlPanel />
-//
-// The panel is hidden behind a small corner button so it doesn't distract during
-// a live demo, but is always reachable.
-
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   useAppStore,
@@ -37,11 +24,6 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Full ordered list of milestones — used for "fast-forward to stage" logic.
 const MILESTONE_ORDER: CropStatus[] = [
   "seeds_planted",
   "fertilized",
@@ -51,7 +33,6 @@ const MILESTONE_ORDER: CropStatus[] = [
   "delivered",
 ];
 
-// Progress value each verified milestone produces (mirrors VERIFIED_PROGRESS_MAP).
 const PROGRESS_MAP: Record<CropStatus, number> = {
   pending: 0,
   seeds_planted: 25,
@@ -73,14 +54,6 @@ const STAGE_LABELS: Record<CropStatus, string> = {
   delivered: "Delivered (pending buyer confirm)",
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-// buildEvidence: creates a fully-verified evidence array covering all milestones
-// from seeds_planted up to and including `targetStatus`.
-// Used by the fast-forward action to populate milestoneEvidence correctly so
-// ContractProgress, MilestoneStepper, and AuditLog all show a coherent history.
 function buildEvidence(
   targetStatus: CropStatus,
   now: string,
@@ -104,10 +77,6 @@ function buildEvidence(
         : new Date(Date.now() - (targetIdx - i) * 3600_000 * 12).toISOString(),
   }));
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Sub-components
-// ─────────────────────────────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: string }) {
   return (
@@ -133,17 +102,11 @@ function ActionBtn({
   disabled?: boolean;
 }) {
   const colorMap = {
-    // Green -> Forest
     green: "border-forest/20 bg-forest/5 text-forest hover:bg-forest/10",
-    // Amber -> Sand
     amber: "border-sand/40 bg-sand/10 text-terracotta hover:bg-sand/20",
-    // Red -> Terracotta
     red: "border-terracotta/20 bg-terracotta/5 text-terracotta hover:bg-terracotta/10",
-    // Violet -> Sage
     violet: "border-sage/40 bg-sage/10 text-forest hover:bg-sage/20",
-    // Gray -> Muted
     gray: "border-border bg-muted/50 text-muted-foreground hover:bg-muted",
-    // Blue -> Primary
     blue: "border-primary/20 bg-primary/5 text-primary hover:bg-primary/10",
   };
 
@@ -168,10 +131,6 @@ function ActionBtn({
     </button>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Contract status pill strip — live view of selected contract state
-// ─────────────────────────────────────────────────────────────────────────────
 
 function ContractStatusStrip({ contractId }: { contractId: string }) {
   const contract = useAppStore((s) =>
@@ -212,18 +171,10 @@ function ContractStatusStrip({ contractId }: { contractId: string }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main panel
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function DemoControlPanel() {
-  // ── Drag & resize state ─────────────────────────────────────────────────────
-  // Position is stored as { x, y } from the top-left of the viewport.
-  // Initialised to bottom-left to match the original fixed position.
   const [pos, setPos] = useState({ x: 20, y: window.innerHeight - 520 });
   const [size, setSize] = useState({ w: 360, h: 520 });
 
-  // Refs hold the in-progress drag/resize origin so event handlers are stable.
   const dragOrigin = useRef<{
     mx: number;
     my: number;
@@ -238,10 +189,8 @@ export function DemoControlPanel() {
   } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // ── Drag: start on header mousedown ─────────────────────────────────────────
   const onDragStart = useCallback(
     (e: React.MouseEvent) => {
-      // Don't hijack clicks on header buttons
       if ((e.target as HTMLElement).closest("button")) return;
       e.preventDefault();
       dragOrigin.current = {
@@ -279,7 +228,6 @@ export function DemoControlPanel() {
     [pos, size.w],
   );
 
-  // ── Resize: start on handle mousedown ───────────────────────────────────────
   const onResizeStart = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -316,7 +264,6 @@ export function DemoControlPanel() {
     [size],
   );
 
-  // ── Keep panel on-screen when window is resized ──────────────────────────────
   useEffect(() => {
     const onResize = () => {
       setPos((p) => ({
@@ -344,18 +291,9 @@ export function DemoControlPanel() {
   const [fastTarget, setFastTarget] = useState<CropStatus>("growing");
 
   const contract = contracts.find((c) => c.id === selectedId) ?? null;
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Action handlers — each maps to one of the five simulation needs
-  // ─────────────────────────────────────────────────────────────────────────
-
-  // 1. Submit milestone evidence (skip photo upload)
-  //    Calls submitMilestoneEvidence with a dummy filename.
-  //    This moves the NEXT unlocked step to pending_verification.
   const handleSubmitNext = () => {
     if (!contract) return;
 
-    // Determine which step comes next after the last verified one
     const lastVerifiedIdx = (() => {
       let idx = -1;
       contract.milestoneEvidence.forEach((e) => {
@@ -383,11 +321,6 @@ export function DemoControlPanel() {
       duration: 3500,
     });
   };
-
-  // 2. Buyer co-confirm delivery
-  //    Calls verifyMilestone("delivered") — the dual sign-off unlock.
-  //    Requires that a "delivered" pending_verification evidence entry exists;
-  //    if not, auto-creates one first so the confirm can fire cleanly.
   const handleBuyerConfirm = () => {
     if (!contract) return;
 
@@ -396,16 +329,12 @@ export function DemoControlPanel() {
     );
 
     if (!deliveredEvidence) {
-      // Auto-submit delivery evidence first so verifyMilestone has something to verify
       submitMilestoneEvidence(
         selectedId,
         "delivered",
         `demo_delivered_${Date.now()}.jpg`,
       );
     }
-
-    // Use a tiny timeout to let the submitMilestoneEvidence state update settle
-    // before verifyMilestone reads the evidence array
     setTimeout(() => {
       verifyMilestone(selectedId, "delivered");
       toast.success("Buyer confirmed delivery!", {
@@ -415,10 +344,6 @@ export function DemoControlPanel() {
       });
     }, 80);
   };
-
-  // 3. Raise a dispute
-  //    Calls disputeMilestone on the most recent pending_verification entry.
-  //    If none exists, auto-submits the next step first then disputes it.
   const handleRaiseDispute = () => {
     if (!contract) return;
 
@@ -441,7 +366,6 @@ export function DemoControlPanel() {
         },
       );
     } else {
-      // Nothing pending — submit the next step then immediately dispute it
       const lastVerifiedIdx = (() => {
         let idx = -1;
         contract.milestoneEvidence.forEach((e) => {
@@ -473,9 +397,6 @@ export function DemoControlPanel() {
       }, 80);
     }
   };
-
-  // 4. Resolve a dispute
-  //    Calls resolveDispute — resets disputeFlag and returns evidence to pending_verification.
   const handleResolveDispute = () => {
     if (!contract) return;
     if (!contract.disputeFlag) {
@@ -489,19 +410,12 @@ export function DemoControlPanel() {
       duration: 3500,
     });
   };
-
-  // 5. Fast-forward to a specific crop stage
-  //    Directly writes a fully-verified evidence array + correct progress + cropStatus
-  //    via updateContract. This is the nuclear option — it bypasses the action chain
-  //    entirely and sets the contract to a coherent target state in one step.
-  //    All portals will immediately reflect the new state.
   const handleFastForward = () => {
     if (!contract) return;
 
     const now = new Date().toISOString();
 
     if (fastTarget === "pending") {
-      // Reset just this contract back to its initial state
       updateContract(selectedId, {
         cropStatus: "pending",
         progress: 0,
@@ -525,8 +439,6 @@ export function DemoControlPanel() {
       cropStatus: fastTarget,
       progress: PROGRESS_MAP[fastTarget],
       milestoneEvidence: evidence,
-      // For "delivered", the last evidence entry stays pending_verification
-      // so the buyer confirmation flow can be demonstrated naturally.
       pendingBuyerConfirmation: isDelivered,
       buyerConfirmedDelivery: false,
       disputeFlag: false,
@@ -545,7 +457,6 @@ export function DemoControlPanel() {
     });
   };
 
-  // 6. Reset all contracts
   const handleReset = () => {
     resetContracts();
     setSelectedId(contracts[0]?.id ?? "");
@@ -554,14 +465,6 @@ export function DemoControlPanel() {
       duration: 3000,
     });
   };
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Pill drag — shared logic used when the panel is collapsed.
-  // Distinguishes a click (open panel) from a drag (move pill) by tracking
-  // whether the pointer moved more than 4px before mouseup.
-  // ─────────────────────────────────────────────────────────────────────────
-
-  // Clamp pos so the expanded panel never spawns partially off-screen.
   const clampForPanel = useCallback(
     (p: { x: number; y: number }) => ({
       x: Math.max(0, Math.min(window.innerWidth - size.w, p.x)),
@@ -581,11 +484,9 @@ export function DemoControlPanel() {
       const onMove = (ev: MouseEvent) => {
         const dx = ev.clientX - startX;
         const dy = ev.clientY - startY;
-        // Only start moving after 4px threshold — prevents accidental drift on click
         if (!didDrag && Math.hypot(dx, dy) < 4) return;
         didDrag = true;
         setPos({
-          // Pill is 40px wide/tall — clamp so it stays fully on-screen
           x: Math.max(0, Math.min(window.innerWidth - 40, originPos.x + dx)),
           y: Math.max(0, Math.min(window.innerHeight - 40, originPos.y + dy)),
         });
@@ -594,10 +495,8 @@ export function DemoControlPanel() {
       const onUp = () => {
         window.removeEventListener("mousemove", onMove);
         window.removeEventListener("mouseup", onUp);
-        // If the pointer barely moved, treat it as a click → open panel
         if (!didDrag) {
           setOpen(true);
-          // Clamp pos so the panel doesn't spawn off-screen
           setPos((p) => clampForPanel(p));
         }
       };
@@ -607,10 +506,6 @@ export function DemoControlPanel() {
     },
     [pos, clampForPanel],
   );
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Render: collapsed pill button (draggable)
-  // ─────────────────────────────────────────────────────────────────────────
 
   if (!open) {
     return (
@@ -624,10 +519,6 @@ export function DemoControlPanel() {
       </div>
     );
   }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Render: expanded panel
-  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div

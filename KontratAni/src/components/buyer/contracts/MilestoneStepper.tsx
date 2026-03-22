@@ -4,20 +4,15 @@ import { Card } from "@/components/ui/card";
 import {
   Check,
   Sprout,
-  // ── NEW: icons for verification states ──────────────────────────────────────
   Hourglass,
   ShieldAlert,
   ShieldCheck,
-  // ── END ──────────────────────────────────────────────────────────────────────
 } from "lucide-react";
-// ── MODIFIED: added MilestoneEvidence, MilestoneVerificationStatus to import ─
-// previous: import { useAppStore } from "@/store/useAppStore";
 import {
   useAppStore,
   type MilestoneEvidence,
   type MilestoneVerificationStatus,
 } from "@/store/useAppStore";
-// ── END ──────────────────────────────────────────────────────────────────────
 
 const stepLabels = [
   { key: "pending", label: "Pending" },
@@ -28,9 +23,6 @@ const stepLabels = [
   { key: "harvested", label: "Harvested" },
   { key: "delivered", label: "In Transit" },
 ];
-
-// ── NEW: helper — given milestoneEvidence array, find the verification status
-// for a specific cropStatus key. Returns null if no evidence submitted yet.
 function getEvidenceStatus(
   evidence: MilestoneEvidence[],
   key: string,
@@ -38,9 +30,7 @@ function getEvidenceStatus(
   const entry = evidence.find((e) => e.cropStatus === key);
   return entry?.verificationStatus ?? null;
 }
-// ── END ──────────────────────────────────────────────────────────────────────
 
-// ── NEW: helper — map verification status to a label string ──────────────────
 function verificationLabel(status: MilestoneVerificationStatus): string {
   switch (status) {
     case "pending_verification":
@@ -51,17 +41,12 @@ function verificationLabel(status: MilestoneVerificationStatus): string {
       return "Verified";
   }
 }
-// ── END ──────────────────────────────────────────────────────────────────────
-
 const MilestoneStepper = () => {
   const { contracts, selectedContractId } = useAppStore();
   const contract = contracts.find((c) => c.id === selectedContractId);
 
   if (!contract) return null;
-
-  // ── NEW: pull evidence array (safe default to empty) ─────────────────────
   const evidence = contract.milestoneEvidence ?? [];
-  // ── END ────────────────────────────────────────────────────────────────────
 
   const steps = stepLabels.map((step, currentIndex) => {
     const statusIndex = stepLabels.findIndex(
@@ -70,10 +55,6 @@ const MilestoneStepper = () => {
 
     const evidenceStatus = getEvidenceStatus(evidence, step.key);
 
-    // ── MODIFIED: Improved 'done' logic ────────────────────────────────────────
-    // A step is done if:
-    // 1. It is the very first step (Pending) and we have moved past it.
-    // 2. OR it's a later step that has been 'verified'.
     const isInitialStep = currentIndex === 0;
     const hasMovedPastInitial = statusIndex > 0;
 
@@ -84,7 +65,6 @@ const MilestoneStepper = () => {
     const active = currentIndex === statusIndex;
     const pending = evidenceStatus === "pending_verification";
     const disputed = evidenceStatus === "disputed";
-    // ───────────────────────────────────────────────────────────────────────────
 
     return {
       label: step.label,
@@ -100,7 +80,6 @@ const MilestoneStepper = () => {
     };
   });
 
-  // ── NEW: node style helper — maps step state to className ─────────────────
   function nodeStyle(s: (typeof steps)[0]): string {
     if (s.disputed) return "border-2 border-red-400 bg-red-50 text-red-600";
     if (s.pending)
@@ -109,9 +88,7 @@ const MilestoneStepper = () => {
     if (s.active) return "border-2 border-primary bg-primary/15 text-primary";
     return "border border-border bg-muted text-muted-foreground";
   }
-  // ── END ────────────────────────────────────────────────────────────────────
 
-  // ── NEW: node icon helper — returns the right icon per state ──────────────
   function NodeIcon({ s, i }: { s: (typeof steps)[0]; i: number }) {
     if (s.disputed) return <ShieldAlert className="h-4 w-4" />;
     if (s.pending) return <Hourglass className="h-4 w-4" />;
@@ -119,7 +96,6 @@ const MilestoneStepper = () => {
     if (s.active) return <Sprout className="h-4 w-4" />;
     return <>{i + 1}</>;
   }
-  // ── END ────────────────────────────────────────────────────────────────────
 
   return (
     <Card className="border border-border bg-card p-6 shadow-none">
@@ -130,7 +106,6 @@ const MilestoneStepper = () => {
       {/* Desktop horizontal */}
       <div className="hidden items-start md:flex">
         {steps.map((s, i) => {
-          // 1. Re-calculate indices inside the map so 's' and 'i' are in scope
           const statusIndex = stepLabels.findIndex(
             (sl) => sl.key === contract.cropStatus,
           );
@@ -145,7 +120,6 @@ const MilestoneStepper = () => {
                 {i > 0 ? (
                   <div
                     className={`h-1 flex-1 rounded-full ${
-                      // If the overall progress has reached this step, color the line green
                       currentIndex <= statusIndex
                         ? "bg-primary"
                         : "bg-progress-track"
@@ -166,7 +140,6 @@ const MilestoneStepper = () => {
                 {i < steps.length - 1 ? (
                   <div
                     className={`h-1 flex-1 rounded-full ${
-                      // If we've strictly passed this step, color the line green
                       currentIndex < statusIndex
                         ? "bg-primary"
                         : "bg-progress-track"
