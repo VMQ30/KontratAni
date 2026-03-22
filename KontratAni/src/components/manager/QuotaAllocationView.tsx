@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { useAppStore } from '@/store/useAppStore';
-import { Sliders, Check, AlertTriangle, RefreshCw, Lock } from 'lucide-react';
+import { Sliders, Check, AlertTriangle, RefreshCw, Lock, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
@@ -89,6 +89,7 @@ export function QuotaAllocationView() {
   );
   const [inputText, setInputText] = useState<Record<string, string>>({});
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [isConfirmed, setIsConfirmed] = useState(false);
 
   const targetKg = contract?.volumeKg || 0;
   const totalAllocated = Object.values(breakdowns).reduce((s, b) => s + b.total, 0);
@@ -103,6 +104,7 @@ export function QuotaAllocationView() {
     setBreakdowns(distribute(farmers, contract.volumeKg));
     setInputText({});
     setFocusedId(null);
+    setIsConfirmed(false);
     toast.success('Reset to fair distribution.');
   }, [contract, farmers]);
 
@@ -113,6 +115,7 @@ export function QuotaAllocationView() {
     setBreakdowns(distribute(c.matchedCooperative?.members || [], c.volumeKg));
     setInputText({});
     setFocusedId(null);
+    setIsConfirmed(false);
   };
 
   const setTotal = (farmerId: string, value: number) => {
@@ -125,6 +128,7 @@ export function QuotaAllocationView() {
       ...prev,
       [farmerId]: { base: prev[farmerId].base, bonus: Math.max(0, clamped - prev[farmerId].base), total: clamped },
     }));
+    setIsConfirmed(false);
   };
 
   const handleSlider = (farmerId: string, value: number[]) => {
@@ -166,7 +170,14 @@ export function QuotaAllocationView() {
       toast.error(`${remaining.toLocaleString()} kg still unassigned. Distribute all quota before confirming.`);
       return;
     }
+    setIsConfirmed(true);
     toast.success(`Quota confirmed for ${contract?.crop}. Ready for SMS broadcast.`);
+  };
+
+  const handleBroadcast = () => {
+    // In the future, this is where we will trigger the Zustand action
+    // to change all assigned farmers' SMS statuses to 'notified'
+    toast.success('SMS Broadcast sent to all assigned farmers!');
   };
 
   // ── Empty state ────────────────────────────────────────────────────────────
@@ -190,7 +201,6 @@ export function QuotaAllocationView() {
 
   return (
     <div className="space-y-5">
-
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -436,17 +446,30 @@ export function QuotaAllocationView() {
             </div>
           )}
 
-          {/* Confirm button */}
-          <Button
-            className="w-full gap-2"
-            size="lg"
-            onClick={handleConfirm}
-            disabled={remaining !== 0}
-          >
-            <Check className="h-4 w-4" />
-            Confirm Allocation
-            {remaining === 0 && ' — Fully Assigned ✓'}
-          </Button>
+{/* Action Buttons */}
+          <div className="flex flex-col gap-3 pt-2">
+            <Button
+              className="w-full gap-2"
+              size="lg"
+              variant={isConfirmed ? "outline" : "default"}
+              onClick={handleConfirm}
+              disabled={remaining !== 0 || isConfirmed}
+            >
+              <Check className="h-4 w-4" />
+              {isConfirmed ? 'Allocation Confirmed ✓' : 'Confirm Allocation'}
+            </Button>
+
+            <Button
+              className="w-full gap-2"
+              size="lg"
+              variant="default"
+              onClick={handleBroadcast}
+              disabled={!isConfirmed}
+            >
+              <Send className="h-4 w-4" />
+              Broadcast to Farmers
+            </Button>
+          </div>
         </>
       )}
     </div>

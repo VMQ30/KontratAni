@@ -440,6 +440,7 @@ const mockContracts: Contract[] = [
     cropStatus: 'pending',
     progress: 0,
     buyerName: 'LGU Community Kitchen',
+    matchedCooperative: mockCooperatives[0],
     escrowAmount: 0,
     createdAt: '2026-03-21',
     milestoneEvidence: [],
