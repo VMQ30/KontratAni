@@ -411,6 +411,42 @@ const mockContracts: Contract[] = [
     buyerConfirmedDelivery: true,
     disputeFlag: false,
   },
+  {
+    id: 'c8',
+    crop: 'Eggplant',
+    volumeKg: 500,
+    targetDate: '2026-10-15',
+    status: 'matched',
+    cropStatus: 'pending',
+    progress: 0,
+    buyerName: 'Makati Fresh Market',
+    matchedCooperative: mockCooperatives[0],
+    escrowAmount: 0,
+    createdAt: '2026-03-20',
+    milestoneEvidence: [],
+    pendingBuyerConfirmation: false,
+    buyerConfirmedDelivery: false,
+    disputeFlag: false,
+  },
+
+  // ── Scenario 9 — Pending Offer (Open) ─────────────────────────────────────
+  // What judges see: An open contract request from a buyer.
+  {
+    id: 'c9',
+    crop: 'Rice (Sinandomeng)',
+    volumeKg: 200,
+    targetDate: '2026-04-10',
+    status: 'matched',
+    cropStatus: 'pending',
+    progress: 0,
+    buyerName: 'LGU Community Kitchen',
+    escrowAmount: 0,
+    createdAt: '2026-03-21',
+    milestoneEvidence: [],
+    pendingBuyerConfirmation: false,
+    buyerConfirmedDelivery: false,
+    disputeFlag: false,
+  },
 ];
 
 const VERIFIED_PROGRESS_MAP: Record<CropStatus, number> = {

@@ -12,11 +12,16 @@ import { Search, Leaf, MapPin, Thermometer, CheckCircle2, FileSignature, ArrowRi
 // 💡 NEW: We map the crops to their required growth days
 const cropData: Record<string, { daysToGrow: number }> = {
   'Tomatoes': { daysToGrow: 90 },
-  'Corn (White)': { daysToGrow: 100 },
+  'Corn (White/Mais)': { daysToGrow: 100 }, // Updated name
   'Eggplant': { daysToGrow: 110 },
   'Rice (Sinandomeng)': { daysToGrow: 120 },
   'Onions (Red)': { daysToGrow: 120 },
   'Calamansi': { daysToGrow: 150 },
+  // 💡 ADDED FROM IMAGE: The 5 new crops
+  'Bok Choy (Pechay)': { daysToGrow: 45 },
+  'Bitter Gourd (Ampalaya)': { daysToGrow: 75 },
+  'Banana (Saging)': { daysToGrow: 210 }, // 7 months lead time
+  'Mango (Mangga)': { daysToGrow: 270 }, // 9 months lead time
 };
 
 const crops = Object.keys(cropData);
@@ -39,7 +44,7 @@ export function DemandView() {
   const [matchedCoops, setMatchedCoops] = useState<MatchedCoop[]>([]);
   const [selectedCoop, setSelectedCoop] = useState<MatchedCoop | null>(null);
 
-  // 💡 NEW: Calculate the earliest possible date based on the selected crop's growth cycle
+  // 💡 Calculate the earliest possible date based on the selected crop's growth cycle
   const minDeliveryDate = useMemo(() => {
     if (!crop) return '';
     const today = new Date();
@@ -48,7 +53,7 @@ export function DemandView() {
     return today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
   }, [crop]);
 
-  // 💡 NEW: If the user changes the crop and their previously selected date is now too early, clear the date
+  // 💡 If the user changes the crop and their previously selected date is now too early, clear the date
   useEffect(() => {
     if (crop && targetDate && targetDate < minDeliveryDate) {
       setTargetDate('');

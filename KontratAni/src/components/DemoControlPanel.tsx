@@ -53,24 +53,24 @@ const MILESTONE_ORDER: CropStatus[] = [
 
 // Progress value each verified milestone produces (mirrors VERIFIED_PROGRESS_MAP).
 const PROGRESS_MAP: Record<CropStatus, number> = {
-  pending:            0,
-  seeds_planted:     25,
-  fertilized:        40,
-  growing:           60,
+  pending: 0,
+  seeds_planted: 25,
+  fertilized: 40,
+  growing: 60,
   ready_for_harvest: 80,
-  harvested:         95,
-  delivered:        100,
+  harvested: 95,
+  delivered: 100,
 };
 
 // Human-readable labels for the fast-forward selector.
 const STAGE_LABELS: Record<CropStatus, string> = {
-  pending:            "Pending (reset)",
-  seeds_planted:      "Seeds Planted",
-  fertilized:         "Fertilized",
-  growing:            "Growing",
-  ready_for_harvest:  "Ready for Harvest",
-  harvested:          "Harvested",
-  delivered:          "Delivered (pending buyer confirm)",
+  pending: "Pending (reset)",
+  seeds_planted: "Seeds Planted",
+  fertilized: "Fertilized",
+  growing: "Growing",
+  ready_for_harvest: "Ready for Harvest",
+  harvested: "Harvested",
+  delivered: "Delivered (pending buyer confirm)",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,7 +91,9 @@ function buildEvidence(
   return MILESTONE_ORDER.slice(0, targetIdx + 1).map((cs, i) => ({
     cropStatus: cs,
     photoFileName: `demo_${cs}.jpg`,
-    submittedAt: new Date(Date.now() - (targetIdx - i) * 3600_000 * 24).toISOString(),
+    submittedAt: new Date(
+      Date.now() - (targetIdx - i) * 3600_000 * 24,
+    ).toISOString(),
     verificationStatus:
       cs === targetStatus && cs === "delivered"
         ? ("pending_verification" as MilestoneVerificationStatus)
@@ -109,7 +111,7 @@ function buildEvidence(
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-violet-400">
+    <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-forest/70">
       {children}
     </p>
   );
@@ -131,12 +133,18 @@ function ActionBtn({
   disabled?: boolean;
 }) {
   const colorMap = {
-    green:  "border-emerald-200 bg-emerald-50  text-emerald-700  hover:bg-emerald-100",
-    amber:  "border-amber-200   bg-amber-50    text-amber-700    hover:bg-amber-100",
-    red:    "border-red-200     bg-red-50      text-red-700      hover:bg-red-100",
-    violet: "border-violet-200  bg-violet-50   text-violet-700   hover:bg-violet-100",
-    gray:   "border-gray-200    bg-gray-50     text-gray-600     hover:bg-gray-100",
-    blue:   "border-blue-200    bg-blue-50     text-blue-700     hover:bg-blue-100",
+    // Green -> Forest
+    green: "border-forest/20 bg-forest/5 text-forest hover:bg-forest/10",
+    // Amber -> Sand
+    amber: "border-sand/40 bg-sand/10 text-terracotta hover:bg-sand/20",
+    // Red -> Terracotta
+    red: "border-terracotta/20 bg-terracotta/5 text-terracotta hover:bg-terracotta/10",
+    // Violet -> Sage
+    violet: "border-sage/40 bg-sage/10 text-forest hover:bg-sage/20",
+    // Gray -> Muted
+    gray: "border-border bg-muted/50 text-muted-foreground hover:bg-muted",
+    // Blue -> Primary
+    blue: "border-primary/20 bg-primary/5 text-primary hover:bg-primary/10",
   };
 
   return (
@@ -152,7 +160,9 @@ function ActionBtn({
       <div className="min-w-0">
         <p className="text-xs font-semibold leading-tight">{label}</p>
         {sublabel && (
-          <p className="mt-0.5 text-[10px] leading-relaxed opacity-70">{sublabel}</p>
+          <p className="mt-0.5 text-[10px] leading-relaxed opacity-70">
+            {sublabel}
+          </p>
         )}
       </div>
     </button>
@@ -164,36 +174,38 @@ function ActionBtn({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ContractStatusStrip({ contractId }: { contractId: string }) {
-  const contract = useAppStore((s) => s.contracts.find((c) => c.id === contractId));
+  const contract = useAppStore((s) =>
+    s.contracts.find((c) => c.id === contractId),
+  );
   if (!contract) return null;
 
   return (
-    <div className="flex flex-wrap gap-1.5 rounded-lg bg-gray-50 border border-gray-100 px-3 py-2">
-      <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-mono text-gray-600">
+    <div className="flex flex-wrap gap-1.5 rounded-lg bg-muted border border-border px-3 py-2">
+      <span className="rounded-full bg-sage/20 px-2 py-0.5 text-[10px] font-mono text-forest">
         {contract.cropStatus.replace(/_/g, " ")}
       </span>
-      <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-mono text-gray-600">
+      <span className="rounded-full bg-sand/30 px-2 py-0.5 text-[10px] font-mono text-terracotta font-bold">
         {contract.progress}%
       </span>
-      <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-mono text-gray-600">
+      <span className="rounded-full bg-white/50 border border-border px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
         {contract.status.replace(/_/g, " ")}
       </span>
       {contract.disputeFlag && (
-        <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+        <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
           ⛔ frozen
         </span>
       )}
       {contract.pendingBuyerConfirmation && !contract.disputeFlag && (
-        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+        <span className="rounded-full bg-sand/30 px-2 py-0.5 text-[10px] font-semibold text-terracotta">
           ⏳ awaiting buyer
         </span>
       )}
       {contract.buyerConfirmedDelivery && (
-        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+        <span className="rounded-full bg-forest/10 px-2 py-0.5 text-[10px] font-semibold text-forest">
           ✓ buyer confirmed
         </span>
       )}
-      <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] text-violet-600">
+      <span className="rounded-full bg-sage/10 px-2 py-0.5 text-[10px] text-forest">
         {contract.milestoneEvidence.length} evidence
       </span>
     </div>
@@ -208,72 +220,107 @@ export function DemoControlPanel() {
   // ── Drag & resize state ─────────────────────────────────────────────────────
   // Position is stored as { x, y } from the top-left of the viewport.
   // Initialised to bottom-left to match the original fixed position.
-  const [pos,  setPos]  = useState({ x: 20, y: window.innerHeight - 520 });
+  const [pos, setPos] = useState({ x: 20, y: window.innerHeight - 520 });
   const [size, setSize] = useState({ w: 360, h: 520 });
 
   // Refs hold the in-progress drag/resize origin so event handlers are stable.
-  const dragOrigin   = useRef<{ mx: number; my: number; px: number; py: number } | null>(null);
-  const resizeOrigin = useRef<{ mx: number; my: number; pw: number; ph: number } | null>(null);
-  const panelRef     = useRef<HTMLDivElement>(null);
+  const dragOrigin = useRef<{
+    mx: number;
+    my: number;
+    px: number;
+    py: number;
+  } | null>(null);
+  const resizeOrigin = useRef<{
+    mx: number;
+    my: number;
+    pw: number;
+    ph: number;
+  } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // ── Drag: start on header mousedown ─────────────────────────────────────────
-  const onDragStart = useCallback((e: React.MouseEvent) => {
-    // Don't hijack clicks on header buttons
-    if ((e.target as HTMLElement).closest("button")) return;
-    e.preventDefault();
-    dragOrigin.current = { mx: e.clientX, my: e.clientY, px: pos.x, py: pos.y };
+  const onDragStart = useCallback(
+    (e: React.MouseEvent) => {
+      // Don't hijack clicks on header buttons
+      if ((e.target as HTMLElement).closest("button")) return;
+      e.preventDefault();
+      dragOrigin.current = {
+        mx: e.clientX,
+        my: e.clientY,
+        px: pos.x,
+        py: pos.y,
+      };
 
-    const onMove = (ev: MouseEvent) => {
-      if (!dragOrigin.current) return;
-      const dx = ev.clientX - dragOrigin.current.mx;
-      const dy = ev.clientY - dragOrigin.current.my;
-      setPos({
-        x: Math.max(0, Math.min(window.innerWidth  - size.w, dragOrigin.current.px + dx)),
-        y: Math.max(0, Math.min(window.innerHeight - size.h, dragOrigin.current.py + dy)),
-      });
-    };
+      const onMove = (ev: MouseEvent) => {
+        if (!dragOrigin.current) return;
+        const dx = ev.clientX - dragOrigin.current.mx;
+        const dy = ev.clientY - dragOrigin.current.my;
+        setPos({
+          x: Math.max(
+            0,
+            Math.min(window.innerWidth - size.w, dragOrigin.current.px + dx),
+          ),
+          y: Math.max(
+            0,
+            Math.min(window.innerHeight - size.h, dragOrigin.current.py + dy),
+          ),
+        });
+      };
 
-    const onUp = () => {
-      dragOrigin.current = null;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup",   onUp);
-    };
+      const onUp = () => {
+        dragOrigin.current = null;
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup",   onUp);
-  }, [pos, size.w]);
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    },
+    [pos, size.w],
+  );
 
   // ── Resize: start on handle mousedown ───────────────────────────────────────
-  const onResizeStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    resizeOrigin.current = { mx: e.clientX, my: e.clientY, pw: size.w, ph: size.h };
+  const onResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      resizeOrigin.current = {
+        mx: e.clientX,
+        my: e.clientY,
+        pw: size.w,
+        ph: size.h,
+      };
 
-    const onMove = (ev: MouseEvent) => {
-      if (!resizeOrigin.current) return;
-      const dx = ev.clientX - resizeOrigin.current.mx;
-      const dy = ev.clientY - resizeOrigin.current.my;
-      setSize({
-        w: Math.max(280, Math.min(600, resizeOrigin.current.pw + dx)),
-        h: Math.max(200, Math.min(window.innerHeight - 40, resizeOrigin.current.ph + dy)),
-      });
-    };
+      const onMove = (ev: MouseEvent) => {
+        if (!resizeOrigin.current) return;
+        const dx = ev.clientX - resizeOrigin.current.mx;
+        const dy = ev.clientY - resizeOrigin.current.my;
+        setSize({
+          w: Math.max(280, Math.min(600, resizeOrigin.current.pw + dx)),
+          h: Math.max(
+            200,
+            Math.min(window.innerHeight - 40, resizeOrigin.current.ph + dy),
+          ),
+        });
+      };
 
-    const onUp = () => {
-      resizeOrigin.current = null;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup",   onUp);
-    };
+      const onUp = () => {
+        resizeOrigin.current = null;
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup",   onUp);
-  }, [size]);
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    },
+    [size],
+  );
 
   // ── Keep panel on-screen when window is resized ──────────────────────────────
   useEffect(() => {
     const onResize = () => {
       setPos((p) => ({
-        x: Math.max(0, Math.min(window.innerWidth  - size.w, p.x)),
+        x: Math.max(0, Math.min(window.innerWidth - size.w, p.x)),
         y: Math.max(0, Math.min(window.innerHeight - size.h, p.y)),
       }));
     };
@@ -282,17 +329,17 @@ export function DemoControlPanel() {
   }, [size.w, size.h]);
 
   // ── Store actions ───────────────────────────────────────────────────────────
-  const contracts              = useAppStore((s) => s.contracts);
+  const contracts = useAppStore((s) => s.contracts);
   const submitMilestoneEvidence = useAppStore((s) => s.submitMilestoneEvidence);
-  const verifyMilestone        = useAppStore((s) => s.verifyMilestone);
-  const disputeMilestone       = useAppStore((s) => s.disputeMilestone);
-  const resolveDispute         = useAppStore((s) => s.resolveDispute);
-  const resetContracts         = useAppStore((s) => s.resetContracts);
-  const updateContract         = useAppStore((s) => s.updateContract);
+  const verifyMilestone = useAppStore((s) => s.verifyMilestone);
+  const disputeMilestone = useAppStore((s) => s.disputeMilestone);
+  const resolveDispute = useAppStore((s) => s.resolveDispute);
+  const resetContracts = useAppStore((s) => s.resetContracts);
+  const updateContract = useAppStore((s) => s.updateContract);
 
   // ── Local UI state ──────────────────────────────────────────────────────────
-  const [open,       setOpen]       = useState(false);
-  const [minimised,  setMinimised]  = useState(false);
+  const [open, setOpen] = useState(false);
+  const [minimised, setMinimised] = useState(false);
   const [selectedId, setSelectedId] = useState(contracts[0]?.id ?? "");
   const [fastTarget, setFastTarget] = useState<CropStatus>("growing");
 
@@ -325,9 +372,14 @@ export function DemoControlPanel() {
       return;
     }
 
-    submitMilestoneEvidence(selectedId, nextStep, `demo_${nextStep}_${Date.now()}.jpg`);
+    submitMilestoneEvidence(
+      selectedId,
+      nextStep,
+      `demo_${nextStep}_${Date.now()}.jpg`,
+    );
     toast.success(`Evidence submitted: ${STAGE_LABELS[nextStep]}`, {
-      description: "Awaiting buyer sign-off. Check ContractProgress to see the amber badge.",
+      description:
+        "Awaiting buyer sign-off. Check ContractProgress to see the amber badge.",
       duration: 3500,
     });
   };
@@ -345,7 +397,11 @@ export function DemoControlPanel() {
 
     if (!deliveredEvidence) {
       // Auto-submit delivery evidence first so verifyMilestone has something to verify
-      submitMilestoneEvidence(selectedId, "delivered", `demo_delivered_${Date.now()}.jpg`);
+      submitMilestoneEvidence(
+        selectedId,
+        "delivered",
+        `demo_delivered_${Date.now()}.jpg`,
+      );
     }
 
     // Use a tiny timeout to let the submitMilestoneEvidence state update settle
@@ -353,7 +409,8 @@ export function DemoControlPanel() {
     setTimeout(() => {
       verifyMilestone(selectedId, "delivered");
       toast.success("Buyer confirmed delivery!", {
-        description: "buyerConfirmedDelivery = true. PayoutView and DirectPayoutView are now unlocked.",
+        description:
+          "buyerConfirmedDelivery = true. PayoutView and DirectPayoutView are now unlocked.",
         duration: 4000,
       });
     }, 80);
@@ -370,11 +427,19 @@ export function DemoControlPanel() {
     );
 
     if (pendingEntry) {
-      disputeMilestone(selectedId, pendingEntry.cropStatus, "Demo dispute — simulated by judge.");
-      toast.error(`Dispute raised on: ${STAGE_LABELS[pendingEntry.cropStatus]}`, {
-        description: "disputeFlag = true. Escrow is now frozen across all portals.",
-        duration: 4000,
-      });
+      disputeMilestone(
+        selectedId,
+        pendingEntry.cropStatus,
+        "Demo dispute — simulated by judge.",
+      );
+      toast.error(
+        `Dispute raised on: ${STAGE_LABELS[pendingEntry.cropStatus]}`,
+        {
+          description:
+            "disputeFlag = true. Escrow is now frozen across all portals.",
+          duration: 4000,
+        },
+      );
     } else {
       // Nothing pending — submit the next step then immediately dispute it
       const lastVerifiedIdx = (() => {
@@ -388,12 +453,21 @@ export function DemoControlPanel() {
       })();
 
       const nextStep = MILESTONE_ORDER[lastVerifiedIdx + 1] ?? "seeds_planted";
-      submitMilestoneEvidence(selectedId, nextStep, `demo_${nextStep}_dispute.jpg`);
+      submitMilestoneEvidence(
+        selectedId,
+        nextStep,
+        `demo_${nextStep}_dispute.jpg`,
+      );
 
       setTimeout(() => {
-        disputeMilestone(selectedId, nextStep, "Demo dispute — simulated by judge.");
+        disputeMilestone(
+          selectedId,
+          nextStep,
+          "Demo dispute — simulated by judge.",
+        );
         toast.error(`Dispute raised on: ${STAGE_LABELS[nextStep]}`, {
-          description: "disputeFlag = true. Escrow is now frozen across all portals.",
+          description:
+            "disputeFlag = true. Escrow is now frozen across all portals.",
           duration: 4000,
         });
       }, 80);
@@ -410,7 +484,8 @@ export function DemoControlPanel() {
     }
     resolveDispute(selectedId);
     toast.success("Dispute resolved.", {
-      description: "disputeFlag = false. Evidence returned to pending_verification for re-review.",
+      description:
+        "disputeFlag = false. Evidence returned to pending_verification for re-review.",
       duration: 3500,
     });
   };
@@ -458,8 +533,8 @@ export function DemoControlPanel() {
       status: isDelivered
         ? "in_progress"
         : contract.escrowAmount > 0
-        ? "in_progress"
-        : "accepted",
+          ? "in_progress"
+          : "accepted",
     });
 
     toast.success(`Fast-forwarded to: ${STAGE_LABELS[fastTarget]}`, {
@@ -487,45 +562,51 @@ export function DemoControlPanel() {
   // ─────────────────────────────────────────────────────────────────────────
 
   // Clamp pos so the expanded panel never spawns partially off-screen.
-  const clampForPanel = useCallback((p: { x: number; y: number }) => ({
-    x: Math.max(0, Math.min(window.innerWidth  - size.w, p.x)),
-    y: Math.max(0, Math.min(window.innerHeight - size.h, p.y)),
-  }), [size.w, size.h]);
+  const clampForPanel = useCallback(
+    (p: { x: number; y: number }) => ({
+      x: Math.max(0, Math.min(window.innerWidth - size.w, p.x)),
+      y: Math.max(0, Math.min(window.innerHeight - size.h, p.y)),
+    }),
+    [size.w, size.h],
+  );
 
-  const onPillMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const originPos = { ...pos };
-    let didDrag = false;
+  const onPillMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const originPos = { ...pos };
+      let didDrag = false;
 
-    const onMove = (ev: MouseEvent) => {
-      const dx = ev.clientX - startX;
-      const dy = ev.clientY - startY;
-      // Only start moving after 4px threshold — prevents accidental drift on click
-      if (!didDrag && Math.hypot(dx, dy) < 4) return;
-      didDrag = true;
-      setPos({
-        // Pill is 40px wide/tall — clamp so it stays fully on-screen
-        x: Math.max(0, Math.min(window.innerWidth  - 40, originPos.x + dx)),
-        y: Math.max(0, Math.min(window.innerHeight - 40, originPos.y + dy)),
-      });
-    };
+      const onMove = (ev: MouseEvent) => {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        // Only start moving after 4px threshold — prevents accidental drift on click
+        if (!didDrag && Math.hypot(dx, dy) < 4) return;
+        didDrag = true;
+        setPos({
+          // Pill is 40px wide/tall — clamp so it stays fully on-screen
+          x: Math.max(0, Math.min(window.innerWidth - 40, originPos.x + dx)),
+          y: Math.max(0, Math.min(window.innerHeight - 40, originPos.y + dy)),
+        });
+      };
 
-    const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup",   onUp);
-      // If the pointer barely moved, treat it as a click → open panel
-      if (!didDrag) {
-        setOpen(true);
-        // Clamp pos so the panel doesn't spawn off-screen
-        setPos((p) => clampForPanel(p));
-      }
-    };
+      const onUp = () => {
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+        // If the pointer barely moved, treat it as a click → open panel
+        if (!didDrag) {
+          setOpen(true);
+          // Clamp pos so the panel doesn't spawn off-screen
+          setPos((p) => clampForPanel(p));
+        }
+      };
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup",   onUp);
-  }, [pos, clampForPanel]);
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    },
+    [pos, clampForPanel],
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
   // Render: collapsed pill button (draggable)
@@ -537,7 +618,7 @@ export function DemoControlPanel() {
         onMouseDown={onPillMouseDown}
         title="Drag to move · Click to open"
         style={{ left: pos.x, top: pos.y }}
-        className="fixed z-[9999] flex h-10 w-10 cursor-grab items-center justify-center rounded-full bg-violet-600 text-white shadow-lg transition-shadow hover:shadow-xl active:cursor-grabbing active:scale-95 select-none"
+        className="fixed z-[9999] flex h-10 w-10 cursor-grab items-center justify-center rounded-full bg-accent text-primary shadow-lg transition-shadow hover:shadow-xl active:cursor-grabbing active:scale-95 select-none"
       >
         <FlaskConical className="h-5 w-5 pointer-events-none" />
       </div>
@@ -551,34 +632,43 @@ export function DemoControlPanel() {
   return (
     <div
       ref={panelRef}
-      style={{ left: pos.x, top: pos.y, width: size.w, height: minimised ? "auto" : size.h }}
-      className="fixed z-[9999] flex flex-col overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-2xl"
+      style={{
+        left: pos.x,
+        top: pos.y,
+        width: size.w,
+        height: minimised ? "auto" : size.h,
+      }}
+      className="fixed z-[9999] flex flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl"
     >
       {/* Header — drag handle */}
       <div
         onMouseDown={onDragStart}
-        className="flex shrink-0 cursor-grab items-center justify-between bg-violet-600 px-4 py-3 active:cursor-grabbing select-none"
+        className="flex shrink-0 cursor-grab items-center justify-between bg-forest px-4 py-3 active:cursor-grabbing select-none"
       >
         <div className="flex items-center gap-2">
           <FlaskConical className="h-4 w-4 text-white" />
-          <p className="text-sm font-bold text-white">Demo Control Panel</p>
-          <span className="rounded-full bg-violet-500 px-2 py-0.5 text-[9px] font-semibold text-violet-200 uppercase tracking-wider">
+          <p className="text-sm font-bold text-white tracking-tight">
+            Demo Control Panel
+          </p>
+          <span className="rounded-full bg-white/20 px-2 py-0.5 text-[9px] font-semibold text-white uppercase tracking-wider">
             simulation
           </span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setMinimised(!minimised)}
-            className="rounded p-1 text-violet-200 hover:bg-violet-500 transition"
+            className="rounded p-1 text-white/70 hover:bg-white/10 transition"
             title={minimised ? "Expand" : "Minimise"}
           >
-            {minimised
-              ? <ChevronUp className="h-4 w-4" />
-              : <ChevronDown className="h-4 w-4" />}
+            {minimised ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </button>
           <button
             onClick={() => setOpen(false)}
-            className="rounded p-1 text-violet-200 hover:bg-violet-500 transition"
+            className="rounded p-1 text-white/70 hover:bg-white/10 transition"
             title="Close"
           >
             <X className="h-4 w-4" />
@@ -587,19 +677,18 @@ export function DemoControlPanel() {
       </div>
 
       {!minimised && (
-        <div className="flex-1 overflow-y-auto min-h-0">
-
+        <div className="flex-1 overflow-y-auto min-h-0 bg-background">
           {/* Contract selector */}
-          <div className="border-b border-gray-100 px-4 py-3 space-y-2">
+          <div className="border-b border-border px-4 py-3 space-y-2">
             <SectionLabel>Target Contract</SectionLabel>
             <select
               value={selectedId}
               onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-violet-400 focus:outline-none"
+              className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-forest/20 focus:outline-none"
             >
               {contracts.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.id} — {c.crop} ({c.status.replace(/_/g, " ")})
+                  {c.id.slice(0, 8)} — {c.crop} ({c.status.replace(/_/g, " ")})
                 </option>
               ))}
             </select>
@@ -607,7 +696,6 @@ export function DemoControlPanel() {
           </div>
 
           <div className="space-y-5 px-4 py-4">
-
             {/* ── Section 1: Milestone Evidence ── */}
             <div>
               <SectionLabel>Milestone Evidence</SectionLabel>
@@ -615,7 +703,7 @@ export function DemoControlPanel() {
                 <ActionBtn
                   icon={Sprout}
                   label="Submit Next Milestone (skip photo)"
-                  sublabel="Submits the next unlocked milestone with a dummy photo. Sets it to pending_verification — buyer sign-off still required."
+                  sublabel="Submits the next unlocked milestone. Sets it to pending_verification."
                   color="blue"
                   onClick={handleSubmitNext}
                   disabled={!contract}
@@ -630,7 +718,7 @@ export function DemoControlPanel() {
                 <ActionBtn
                   icon={ShieldCheck}
                   label="Buyer Confirm Delivery"
-                  sublabel="Calls verifyMilestone('delivered'). Sets buyerConfirmedDelivery = true. Unlocks PayoutView and DirectPayoutView."
+                  sublabel="Calls verifyMilestone('delivered'). Unlocks payout portals."
                   color="green"
                   onClick={handleBuyerConfirm}
                   disabled={!contract}
@@ -645,7 +733,7 @@ export function DemoControlPanel() {
                 <ActionBtn
                   icon={ShieldAlert}
                   label="Raise Dispute"
-                  sublabel="Freezes escrow. Targets the first pending_verification entry, or auto-submits then disputes the next step."
+                  sublabel="Freezes escrow. Targets the current pending entry."
                   color="red"
                   onClick={handleRaiseDispute}
                   disabled={!contract}
@@ -653,7 +741,7 @@ export function DemoControlPanel() {
                 <ActionBtn
                   icon={ShieldX}
                   label="Resolve Dispute (Admin)"
-                  sublabel="Unfreezes escrow. Returns disputed evidence to pending_verification for re-review."
+                  sublabel="Unfreezes escrow. Returns evidence for re-review."
                   color="amber"
                   onClick={handleResolveDispute}
                   disabled={!contract || !contract.disputeFlag}
@@ -668,13 +756,15 @@ export function DemoControlPanel() {
                 <select
                   value={fastTarget}
                   onChange={(e) => setFastTarget(e.target.value as CropStatus)}
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-violet-400 focus:outline-none"
+                  className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-forest/20 focus:outline-none"
                 >
-                  {(["pending", ...MILESTONE_ORDER] as CropStatus[]).map((s) => (
-                    <option key={s} value={s}>
-                      {STAGE_LABELS[s]}
-                    </option>
-                  ))}
+                  {(["pending", ...MILESTONE_ORDER] as CropStatus[]).map(
+                    (s) => (
+                      <option key={s} value={s}>
+                        {STAGE_LABELS[s]}
+                      </option>
+                    ),
+                  )}
                 </select>
                 <ActionBtn
                   icon={FastForward}
@@ -682,9 +772,7 @@ export function DemoControlPanel() {
                   sublabel={
                     fastTarget === "pending"
                       ? "Clears all evidence and resets this contract only."
-                      : fastTarget === "delivered"
-                      ? "Builds verified history up to 'harvested', then adds delivery evidence as pending_verification. Use 'Buyer Confirm' next."
-                      : "Writes a fully-verified evidence history up to this stage. All portals update instantly."
+                      : "Writes a fully-verified history up to this stage."
                   }
                   color="violet"
                   onClick={handleFastForward}
@@ -693,33 +781,29 @@ export function DemoControlPanel() {
               </div>
 
               {/* Tip box */}
-              <div className="mt-2 flex items-start gap-2 rounded-lg border border-violet-100 bg-violet-50 px-3 py-2">
-                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-500" />
-                <p className="text-[10px] leading-relaxed text-violet-600">
-                  For a full end-to-end demo: fast-forward to <strong>Growing</strong>,
-                  then <strong>Submit Next</strong> (ready for harvest), then
-                  <strong> Submit Next</strong> (harvested), then
-                  <strong> Submit Next</strong> (delivered), then
-                  <strong> Buyer Confirm</strong>.
+              <div className="mt-2 flex items-start gap-2 rounded-lg border border-sage/20 bg-sage/5 px-3 py-2">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-forest" />
+                <p className="text-[10px] leading-relaxed text-forest/80">
+                  For a full demo: fast-forward to <strong>Growing</strong>,
+                  then use <strong>Submit Next</strong> steps.
                 </p>
               </div>
             </div>
 
             {/* ── Section 5: Reset ── */}
-            <div className="border-t border-gray-100 pt-4">
+            <div className="border-t border-border pt-4">
               <SectionLabel>Global Reset</SectionLabel>
               <button
                 onClick={handleReset}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 py-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-100 active:scale-[0.98]"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-muted/50 py-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground active:scale-[0.98]"
               >
                 <RotateCcw className="h-4 w-4" />
-                Reset All Contracts to Mock Defaults
+                Reset All Contracts
               </button>
-              <p className="mt-1.5 text-center text-[10px] text-gray-400">
-                Restores all contracts. Cannot be undone.
+              <p className="mt-1.5 text-center text-[10px] text-muted-foreground">
+                Restores mock data defaults.
               </p>
             </div>
-
           </div>
         </div>
       )}
@@ -729,9 +813,9 @@ export function DemoControlPanel() {
         <div
           onMouseDown={onResizeStart}
           title="Drag to resize"
-          className="flex shrink-0 cursor-se-resize items-center justify-end border-t border-violet-100 bg-violet-50 px-2 py-1 select-none"
+          className="flex shrink-0 cursor-se-resize items-center justify-end border-t border-border bg-muted/30 px-2 py-1 select-none"
         >
-          <GripHorizontal className="h-3.5 w-3.5 rotate-45 text-violet-300" />
+          <GripHorizontal className="h-3.5 w-3.5 rotate-45 text-muted-foreground/30" />
         </div>
       )}
     </div>
