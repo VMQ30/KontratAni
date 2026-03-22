@@ -19,14 +19,14 @@ export function ProfileView() {
     currentFarmer?.hectares.toString() || "",
   );
   const [soilType, setSoilType] = useState(currentFarmer?.soilType || "");
-  const [payoutMethod, setPayoutMethod] = useState(
-    currentFarmer?.payoutMethod || "gcash",
-  );
+  const [payoutMethod, setPayoutMethod] = useState<"cash" | "gcash" | "maya" | "bank">(
+  (currentFarmer?.payoutMethod as "cash" | "gcash" | "maya" | "bank") || "gcash"
+);
 
   const [profileEdit, setProfileEdit] = useState(false);
 
   const handleSaveProfile = () => {
-    if (!farmName || !location || !hectares) {
+    if (!farmName || !location || !hectares || !soilType) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -54,47 +54,51 @@ export function ProfileView() {
           </CardTitle>
           <button
             onClick={() => setProfileEdit(!profileEdit)}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent transition-colors"
           >
             <Pencil className="h-3 w-3" />
-            {profileEdit ? "Save" : "Edit"}
+            {profileEdit ? "Cancel" : "Edit"}
           </button>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Farm Name */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Farm Name / Your Name</Label>
+            <Label className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-[11px]">Farm Name / Your Name</Label>
             {profileEdit ? (
               <Input
                 value={farmName}
                 onChange={(e) => setFarmName(e.target.value)}
                 placeholder="Enter farm or your name"
-                className="focus:border-[#2D6A4F] focus:outline-none"
+                className="focus:border-primary focus:outline-none"
               />
             ) : (
-              <p className="text-sm font-medium text-foreground">{farmName}</p>
+              <div className="flex w-full items-center rounded-md border border-border bg-accent/30 px-3 py-2 text-sm font-medium text-foreground">
+                {farmName}
+              </div>
             )}
           </div>
 
           {/* Location */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Location / Barangay</Label>
+            <Label className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-[11px]">Location / Barangay</Label>
             {profileEdit ? (
               <Input
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="Enter location"
-                className="focus:border-[#2D6A4F] focus:outline-none"
+                className="focus:border-primary focus:outline-none"
               />
             ) : (
-              <p className="text-sm font-medium text-foreground">{location}</p>
+              <div className="flex w-full items-center rounded-md border border-border bg-accent/30 px-3 py-2 text-sm font-medium text-foreground">
+                {location}
+              </div>
             )}
           </div>
 
           {/* Hectares and Soil Type */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Total Hectares</Label>
+              <Label className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-[11px]">Total Hectares</Label>
               {profileEdit ? (
                 <Input
                   type="number"
@@ -103,52 +107,60 @@ export function ProfileView() {
                   value={hectares}
                   onChange={(e) => setHectares(e.target.value)}
                   placeholder="0.0"
-                  className="focus:border-[#2D6A4F] focus:outline-none"
+                  className="focus:border-primary focus:outline-none"
                 />
               ) : (
-                <p className="text-sm font-medium text-foreground">
+                <div className="flex w-full items-center rounded-md border border-border bg-accent/30 px-3 py-2 text-sm font-medium text-foreground">
                   {hectares} ha
-                </p>
+                </div>
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Primary Soil Type</Label>
+              <Label className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-[11px]">Primary Soil Type</Label>
               {profileEdit ? (
-                <Input
+                <select
                   value={soilType}
                   onChange={(e) => setSoilType(e.target.value)}
-                  placeholder="e.g., Loam, Clay Loam"
-                  className="focus:border-[#2D6A4F] focus:outline-none"
-                />
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary h-10"
+                >
+                  <option value="" disabled>Select Soil Type</option>
+                  <option value="Loam">Loam</option>
+                  <option value="Clay Loam">Clay Loam</option>
+                  <option value="Sandy Loam">Sandy Loam</option>
+                  <option value="Silt Loam">Silt Loam</option>
+                  <option value="Clay">Clay</option>
+                  <option value="Sand">Sand</option>
+                </select>
               ) : (
-                <p className="text-sm font-medium text-foreground">
-                  {soilType}
-                </p>
+                <div className="flex w-full items-center rounded-md border border-border bg-accent/30 px-3 py-2 text-sm font-medium text-foreground">
+                  {soilType || "Not specified"}
+                </div>
               )}
             </div>
           </div>
 
           {/* Payout Method */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">
+            <Label className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-[11px]">
               Preferred Payout Method
             </Label>
             {profileEdit ? (
               <select
                 value={payoutMethod}
                 onChange={(e) =>
-                  setPayoutMethod(e.target.value as "cash" | "gcash" | "maya")
+                  setPayoutMethod(e.target.value as "cash" | "gcash" | "maya" | "bank")
                 }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-[#2D6A4F] focus:outline-none"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary h-10"
               >
                 <option value="gcash">GCash</option>
                 <option value="maya">Maya</option>
+                <option value="bank">Bank Transfer</option>
                 <option value="cash">Cash</option>
               </select>
             ) : (
-              <div>
-                <Badge variant="outline" className="capitalize">
-                  {payoutMethod}
+              <div className="flex w-full items-center rounded-md border border-border bg-accent/30 px-3 py-2 text-sm font-medium text-foreground">
+                <Badge variant="outline" className="capitalize bg-background">
+                  {payoutMethod === "bank" ? "Bank Transfer" : payoutMethod}
                 </Badge>
               </div>
             )}
@@ -157,7 +169,7 @@ export function ProfileView() {
           {profileEdit && (
             <Button
               onClick={handleSaveProfile}
-              className="w-full bg-[#2D6A4F] hover:bg-[#1F4A38]"
+              className="w-full mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Save Changes
             </Button>
@@ -170,38 +182,40 @@ export function ProfileView() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Leaf className="h-4 w-4 text-primary" />
-            Land Information
+            Land Information Snapshot
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-lg bg-accent p-3">
+            <div className="rounded-lg bg-accent/50 p-3 border border-border/50">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Total Hectares
               </p>
               <p className="mt-2 text-xl font-semibold text-foreground">
-                {hectares} ha
+                {hectares || "0"} ha
               </p>
             </div>
-            <div className="rounded-lg bg-accent p-3">
+            <div className="rounded-lg bg-accent/50 p-3 border border-border/50">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Soil Type
               </p>
               <p className="mt-2 text-sm font-semibold text-foreground">
-                {soilType}
+                {soilType || "Not Set"}
               </p>
             </div>
-            <div className="rounded-lg bg-accent p-3">
+            <div className="rounded-lg bg-accent/50 p-3 border border-border/50 flex flex-col justify-between">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Status
               </p>
-              <Badge className="mt-2 bg-green-100 text-green-800">Active</Badge>
+              <div className="mt-2">
+                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">Active</Badge>
+              </div>
             </div>
           </div>
 
-          <div className="rounded-lg border border-[#9FE1CB] bg-[#E1F5EE] p-4">
-            <p className="text-sm leading-relaxed text-[#085041]">
-              <span className="font-semibold">Solo Farmer Status Active.</span>{" "}
+          <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+            <p className="text-sm leading-relaxed text-foreground">
+              <span className="font-semibold text-primary">Solo Farmer Status Active.</span>{" "}
               You are registered as the sole fulfiller for all your accepted
               contracts. All produce will be assigned directly to you.
             </p>
