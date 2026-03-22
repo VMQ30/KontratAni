@@ -1,23 +1,29 @@
-import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '@/store/useAppStore';
-import { LayoutDashboard, FileText, TrendingUp, CreditCard, Sprout, LogOut } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useNavigate } from "react-router-dom";
+import { useAppStore } from "@/store/useAppStore";
+import {
+  LayoutDashboard,
+  FileText,
+  TrendingUp,
+  CreditCard,
+  Sprout,
+  LogOut,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'demand', label: 'Market Demand', icon: TrendingUp },
-  { id: 'contracts', label: 'My Contracts', icon: FileText },
-  { id: 'payments', label: 'Payments', icon: CreditCard },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "demand", label: "Market Demand", icon: TrendingUp },
+  { id: "contracts", label: "My Contracts", icon: FileText },
+  { id: "payments", label: "Payments", icon: CreditCard },
 ];
 
 export function BuyerSidebar() {
   const { activeView, setActiveView } = useAppStore();
   const navigate = useNavigate();
 
-  // Reusable logout function
   const handleLogout = () => {
-    localStorage.removeItem('palai_user_role'); 
-    navigate('/'); 
+    localStorage.removeItem("palai_user_role");
+    navigate("/");
   };
 
   return (
@@ -47,10 +53,10 @@ export function BuyerSidebar() {
               key={item.id}
               onClick={() => setActiveView(item.id)}
               className={cn(
-                'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
+                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150",
                 active
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
               )}
             >
               <Icon className="h-4 w-4" />
@@ -64,7 +70,6 @@ export function BuyerSidebar() {
       <div className="px-3 pb-4">
         <button
           onClick={handleLogout}
-          // Hover classes strictly match the nav buttons above for uniformity
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors duration-150"
         >
           <LogOut className="h-4 w-4" />
@@ -75,8 +80,12 @@ export function BuyerSidebar() {
       {/* Footer */}
       <div className="border-t border-sidebar-border px-6 py-4">
         {/* Changed these to foreground to ensure readability */}
-        <p className="text-xs font-medium text-sidebar-foreground">Metro Fresh Foods</p>
-        <p className="text-xs text-sidebar-foreground/70">Institutional Buyer</p>
+        <p className="text-xs font-medium text-sidebar-foreground">
+          Metro Fresh Foods
+        </p>
+        <p className="text-xs text-sidebar-foreground/70">
+          Institutional Buyer
+        </p>
       </div>
     </aside>
   );

@@ -1,9 +1,4 @@
-// ContractsView.tsx (Buyer)
-
-// ── MODIFIED: removed CropStatus import — no longer used in this file ─────────
-// previous: import { useAppStore, type CropStatus } from "@/store/useAppStore";
 import { useAppStore } from "@/store/useAppStore";
-// ── END ──────────────────────────────────────────────────────────────────────
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,19 +10,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
-// ── MODIFIED: removed unused useState for escrow; added useState for confirm modal
-// previous: import { useState, useEffect } from "react";
 import { useState } from "react";
-// ── END ──────────────────────────────────────────────────────────────────────
 import {
   Lock,
   CheckCircle2,
   ArrowLeft,
-  // ── NEW: icons for verification / confirmation UI ─────────────────────────
   ShieldCheck,
   ShieldAlert,
   Hourglass,
-  // ── END ────────────────────────────────────────────────────────────────────
 } from "lucide-react";
 import ContractsIndex from "./contracts/ContractsIndex";
 
@@ -37,62 +27,27 @@ export function ContractsView() {
     selectedContractId,
     selectContract,
     fundContract,
-    // ── MODIFIED: removed updateCropStatus from destructure ──────────────────
-    // previous: updateCropStatus,
-    // Reason: was only consumed by the localStorage listener being removed.
-    // ── END ────────────────────────────────────────────────────────────────────
-    // ── NEW: pull verifyMilestone and disputeMilestone for buyer actions ──────
     verifyMilestone,
     disputeMilestone,
-    // ── END ────────────────────────────────────────────────────────────────────
   } = useAppStore();
 
   const [escrowModal, setEscrowModal] = useState(false);
   const [escrowSuccess, setEscrowSuccess] = useState(false);
-  // ── NEW: state for buyer delivery confirmation modal ──────────────────────
   const [confirmModal, setConfirmModal] = useState(false);
   const [disputeModal, setDisputeModal] = useState(false);
   const [disputeReason, setDisputeReason] = useState("");
-  // ── END ────────────────────────────────────────────────────────────────────
-
-  // ── MODIFIED: removed useEffect with localStorage storage listener ─────────
-  // previous:
-  //   const CROP_STATUS_KEY = "kontratani_crop_status";
-  //   useEffect(() => {
-  //     const handleStorage = (e: StorageEvent) => {
-  //       if (e.key !== CROP_STATUS_KEY || !e.newValue) return;
-  //       try {
-  //         const { contractId, cropStatus } = JSON.parse(e.newValue) as {
-  //           contractId: string;
-  //           cropStatus: CropStatus;
-  //           ts: number;
-  //         };
-  //         updateCropStatus(contractId, cropStatus);
-  //       } catch {}
-  //     };
-  //     window.addEventListener("storage", handleStorage);
-  //     return () => window.removeEventListener("storage", handleStorage);
-  //   }, [updateCropStatus]);
-  //
-  // Reason: This listener allowed any tab to push cropStatus changes directly
-  // into the store without buyer co-confirmation, bypassing the dual sign-off
-  // that protects escrow release. All milestone updates now flow through
-  // submitMilestoneEvidence (farmer) → verifyMilestone (buyer) only.
-  // ── END ────────────────────────────────────────────────────────────────────
-
   const contract = contracts.find((c) => c.id === selectedContractId);
+  const pendingDeliveryEvidence =
+    contract?.milestoneEvidence?.find(
+      (e) =>
+        e.cropStatus === "delivered" &&
+        e.verificationStatus === "pending_verification",
+    ) ?? null;
 
-  // ── NEW: derive pending delivery evidence for the selected contract ─────────
-  // The buyer confirmation panel only appears when a farmer has submitted
-  // delivery evidence that is still pending_verification.
-  const pendingDeliveryEvidence = contract?.milestoneEvidence?.find(
-    (e) => e.cropStatus === "delivered" && e.verificationStatus === "pending_verification"
-  ) ?? null;
-
-  const hasDisputedEvidence = contract?.milestoneEvidence?.some(
-    (e) => e.verificationStatus === "disputed"
-  ) ?? false;
-  // ── END ────────────────────────────────────────────────────────────────────
+  const hasDisputedEvidence =
+    contract?.milestoneEvidence?.some(
+      (e) => e.verificationStatus === "disputed",
+    ) ?? false;
 
   if (!contract) {
     return (
@@ -145,24 +100,16 @@ export function ContractsView() {
     fundContract(contract.id);
     setEscrowSuccess(true);
   };
-
-  // ── NEW: buyer confirms delivery — triggers verifyMilestone("delivered") ────
-  // This is the critical dual sign-off action. Until this is called,
-  // escrow stays locked even if the farmer has marked "delivered".
   const handleConfirmDelivery = () => {
     verifyMilestone(contract.id, "delivered");
     setConfirmModal(false);
   };
-  // ── END ────────────────────────────────────────────────────────────────────
-
-  // ── NEW: buyer raises a dispute on pending delivery evidence ────────────────
   const handleRaiseDispute = () => {
     if (!disputeReason.trim()) return;
     disputeMilestone(contract.id, "delivered", disputeReason.trim());
     setDisputeReason("");
     setDisputeModal(false);
   };
-  // ── END ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
@@ -230,14 +177,19 @@ export function ContractsView() {
                     ? ` (${pendingDeliveryEvidence.photoFileName})`
                     : ""}{" "}
                   and is awaiting your confirmation. Escrow of{" "}
-                  <strong>₱{contract.escrowAmount.toLocaleString()}</strong> will
-                  not release until you confirm or dispute.
+                  <strong>₱{contract.escrowAmount.toLocaleString()}</strong>{" "}
+                  will not release until you confirm or dispute.
                 </p>
                 <p className="mt-1 text-xs text-amber-600">
                   Submitted:{" "}
                   {new Date(pendingDeliveryEvidence.submittedAt).toLocaleString(
                     "en-PH",
-                    { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
+                    {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
                   )}
                 </p>
               </div>
@@ -278,8 +230,8 @@ export function ContractsView() {
               <p className="mt-1 text-sm text-red-700">
                 A dispute has been raised on this contract. The escrow of{" "}
                 <strong>₱{contract.escrowAmount.toLocaleString()}</strong> is
-                frozen. PalAI admin has been notified and will resolve this case.
-                No funds will be released until the dispute is resolved.
+                frozen. PalAI admin has been notified and will resolve this
+                case. No funds will be released until the dispute is resolved.
               </p>
               {contract.milestoneEvidence
                 .filter((e) => e.verificationStatus === "disputed")
@@ -361,7 +313,8 @@ export function ContractsView() {
                   in a secure escrow account for this contract.
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Funds will be released to the cooperative upon verified delivery.
+                  Funds will be released to the cooperative upon verified
+                  delivery.
                 </p>
               </div>
               <DialogFooter>
@@ -435,8 +388,8 @@ export function ContractsView() {
               from escrow to the cooperative for farmer payouts.
             </p>
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
-              ⚠️ This action is irreversible. Only confirm if you have physically
-              received and verified the goods.
+              ⚠️ This action is irreversible. Only confirm if you have
+              physically received and verified the goods.
             </div>
           </div>
           <DialogFooter>

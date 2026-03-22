@@ -16,7 +16,7 @@ import {
   Hourglass,
   ShieldCheck,
   Upload,
-  Landmark, // Added for Bank Transfer
+  Landmark,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,6 @@ function resolvePayoutStage(
   return "locked";
 }
 
-// ── PAYOUT METHOD DICTIONARIES ──────────────────────────────────────────────
 const PAYOUT_METHOD_ICONS: Record<string, React.ElementType> = {
   gcash: Smartphone,
   maya: Smartphone,
@@ -67,10 +66,7 @@ const PAYOUT_METHOD_LABEL: Record<string, string> = {
   bank: "Bank Transfer",
 };
 
-// ── UI COMPONENTS ───────────────────────────────────────────────────────────
-
 function EscrowStatusBanner({ stage }: { stage: PayoutStage }) {
-  // Simplified to use uniform backgrounds with accenting icon colors
   const configs: Record<
     PayoutStage,
     { icon: React.ElementType; title: string; desc: string; iconColor: string }
@@ -145,12 +141,14 @@ function PayoutAmountCard({
 }) {
   const isDone = stage === "paid";
   const isActive = stage === "buyer_confirmed";
-  
+
   return (
     <Card className="overflow-hidden border-border bg-card shadow-sm">
       <CardContent className="p-0">
         <div className="flex flex-col items-center justify-center py-8">
-          {isDone && <CheckCircle2 className="mb-3 h-10 w-10 text-emerald-500" />}
+          {isDone && (
+            <CheckCircle2 className="mb-3 h-10 w-10 text-emerald-500" />
+          )}
           {stage === "releasing" && (
             <div className="mb-3 h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
           )}
@@ -179,7 +177,7 @@ function PayoutAmountCard({
                     ? "text-destructive"
                     : stage === "locked"
                       ? "text-muted-foreground/50" // Only gray out if not yet funded
-                      : "text-foreground" // Solid black for awaiting_buyer, escrow_funded, etc.
+                      : "text-foreground", // Solid black for awaiting_buyer, escrow_funded, etc.
             )}
           >
             ₱{amount.toLocaleString()}
@@ -198,24 +196,26 @@ function PayoutAmountCard({
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Platform fee</span>
-            <span className="font-medium text-muted-foreground">₱0 (waived)</span>
+            <span className="font-medium text-muted-foreground">
+              ₱0 (waived)
+            </span>
           </div>
-          <div 
+          <div
             className={cn(
               "flex justify-between border-t border-border pt-3 font-bold",
-              stage === "locked" ? "text-muted-foreground" : "text-foreground"
+              stage === "locked" ? "text-muted-foreground" : "text-foreground",
             )}
           >
             <span>You receive</span>
             <span
               className={cn(
-                isDone 
-                  ? "text-emerald-600" 
-                  : isActive 
-                    ? "text-primary" 
+                isDone
+                  ? "text-emerald-600"
+                  : isActive
+                    ? "text-primary"
                     : stage === "locked"
-                      ? "text-muted-foreground/50" 
-                      : "text-foreground" // Matches the solid black logic above
+                      ? "text-muted-foreground/50"
+                      : "text-foreground", // Matches the solid black logic above
               )}
             >
               ₱{amount.toLocaleString()}
@@ -256,8 +256,16 @@ function WalletCard({
 function PayoutTimeline({ stage }: { stage: PayoutStage }) {
   const steps = [
     { id: "escrow_funded", label: "Escrow funded by buyer", icon: Lock },
-    { id: "awaiting_buyer", label: "Farmer submits delivery proof", icon: Upload },
-    { id: "buyer_confirmed", label: "Buyer co-confirms delivery", icon: ShieldCheck },
+    {
+      id: "awaiting_buyer",
+      label: "Farmer submits delivery proof",
+      icon: Upload,
+    },
+    {
+      id: "buyer_confirmed",
+      label: "Buyer co-confirms delivery",
+      icon: ShieldCheck,
+    },
     { id: "paid", label: "Funds deposited to wallet", icon: ArrowDownToLine },
   ] as const;
 
@@ -287,7 +295,7 @@ function PayoutTimeline({ stage }: { stage: PayoutStage }) {
                   ? "border-primary bg-primary text-primary-foreground"
                   : active
                     ? "border-primary bg-background text-primary shadow-sm"
-                    : "border-border bg-muted text-muted-foreground/40"
+                    : "border-border bg-muted text-muted-foreground/40",
               )}
             >
               <Icon className="h-4 w-4" />
@@ -297,7 +305,7 @@ function PayoutTimeline({ stage }: { stage: PayoutStage }) {
                 "flex-1 text-sm",
                 done || active
                   ? "font-medium text-foreground"
-                  : "text-muted-foreground"
+                  : "text-muted-foreground",
               )}
             >
               {step.label}
@@ -362,7 +370,9 @@ export function DirectPayoutView() {
   const [selectedId, setSelectedId] = useState<string | null>(
     eligibleContracts[0]?.id ?? null,
   );
-  const [paidContracts, setPaidContracts] = useState<Record<string, boolean>>({});
+  const [paidContracts, setPaidContracts] = useState<Record<string, boolean>>(
+    {},
+  );
   const [releasing, setReleasing] = useState<Record<string, boolean>>({});
 
   const contract = contracts.find((c) => c.id === selectedId) ?? null;
@@ -433,7 +443,9 @@ export function DirectPayoutView() {
           Direct Payout Wallet
         </h2>
         <p className="text-sm text-muted-foreground">
-          Escrow releases only after <strong>both farmer and buyer confirm delivery</strong>. Any disputes freeze funds for admin review.
+          Escrow releases only after{" "}
+          <strong>both farmer and buyer confirm delivery</strong>. Any disputes
+          freeze funds for admin review.
         </p>
       </div>
 
@@ -447,7 +459,7 @@ export function DirectPayoutView() {
                 "rounded-md border px-4 py-2 text-sm font-medium transition-colors",
                 selectedId === c.id
                   ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-foreground hover:bg-accent"
+                  : "border-border bg-card text-foreground hover:bg-accent",
               )}
             >
               {c.crop}
@@ -509,7 +521,8 @@ export function DirectPayoutView() {
             <Card className="border-border shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Wallet className="h-4 w-4 text-muted-foreground" /> Linked Payout Wallet
+                  <Wallet className="h-4 w-4 text-muted-foreground" /> Linked
+                  Payout Wallet
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -518,7 +531,8 @@ export function DirectPayoutView() {
                   farmerName={farmer.name}
                 />
                 <p className="text-xs text-muted-foreground">
-                  To change your payout method, go to <strong>Profile & Land</strong>.
+                  To change your payout method, go to{" "}
+                  <strong>Profile & Land</strong>.
                 </p>
               </CardContent>
             </Card>
@@ -526,7 +540,8 @@ export function DirectPayoutView() {
             <Card className="border-border shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Clock className="h-4 w-4 text-muted-foreground" /> Payout Timeline
+                  <Clock className="h-4 w-4 text-muted-foreground" /> Payout
+                  Timeline
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -538,7 +553,8 @@ export function DirectPayoutView() {
               <Card className="border-border shadow-sm bg-muted/10">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base text-foreground">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Transaction Record
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />{" "}
+                    Transaction Record
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
@@ -560,7 +576,7 @@ export function DirectPayoutView() {
                       <span
                         className={cn(
                           "font-medium text-foreground",
-                          label === "Amount" && "text-emerald-600"
+                          label === "Amount" && "text-emerald-600",
                         )}
                       >
                         {value}
@@ -570,12 +586,16 @@ export function DirectPayoutView() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Verified by</span>
                     <span className="flex items-center gap-1 font-medium text-foreground">
-                      <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Dual sign-off
+                      <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Dual
+                      sign-off
                     </span>
                   </div>
                   <div className="flex justify-between items-center mt-2 pt-2 border-t border-border">
                     <span className="text-muted-foreground">Status</span>
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
+                    <Badge
+                      variant="secondary"
+                      className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100"
+                    >
                       Completed
                     </Badge>
                   </div>
