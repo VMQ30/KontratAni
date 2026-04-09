@@ -72,10 +72,12 @@ function PhotoUpload({
   onFileSelected,
   fileName,
   onClear,
+  required,
 }: {
   onFileSelected: (name: string) => void;
   fileName: string | null;
   onClear: () => void;
+  required?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -103,7 +105,13 @@ function PhotoUpload({
       className="flex w-full items-center gap-2 rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
     >
       <Upload className="h-4 w-4 shrink-0" />
-      <span>Attach photo evidence <span className="text-red-500">*</span></span>
+      <span>
+        Attach photo evidence{" "}
+        {required
+          ? <span className="text-red-500">*</span>
+          : <span className="text-muted-foreground/60">(optional)</span>
+        }
+      </span>
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleChange} />
     </button>
   );
@@ -169,7 +177,7 @@ function TimelineStep({
   step: MilestoneStep;
   state: "verified" | "pending" | "disputed" | "next" | "locked";
   evidence: MilestoneEvidence | undefined;
-  onSubmit: (photoFileName: string) => void;
+  onSubmit: (photoFileName: string | null) => void;
   onDispute: () => void;
   isLast: boolean;
 }) {
@@ -178,9 +186,11 @@ function TimelineStep({
   const [photoFile, setPhotoFile] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const isDelivered = step.status === "delivered";
+
   const handleSubmit = async () => {
-    if (!photoFile) {
-      toast.error("Please attach a photo before submitting.");
+    if (isDelivered && !photoFile) {
+      toast.error("A photo is required for delivery confirmation.");
       return;
     }
     setSubmitting(true);
@@ -279,19 +289,21 @@ function TimelineStep({
               Submit evidence for <span className={step.color}>{step.label}</span>
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              A photo is required. Your submission will be sent to the buyer for
-              co-confirmation before this milestone is marked complete.
-              Escrow remains locked until they approve.
+              {isDelivered
+                ? "A delivery photo is required. Your submission will be sent to the buyer for co-confirmation before escrow is released."
+                : "Your submission will be sent to the buyer for co-confirmation before this milestone is marked complete. Escrow remains locked until they approve."
+              }
             </p>
             <PhotoUpload
               onFileSelected={setPhotoFile}
               fileName={photoFile}
               onClear={() => setPhotoFile(null)}
+              required={isDelivered}
             />
             <div className="flex gap-2">
               <button
                 onClick={handleSubmit}
-                disabled={submitting || !photoFile}
+                disabled={submitting || (isDelivered && !photoFile)}
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
               >
                 {submitting
@@ -433,7 +445,7 @@ export function ContractProgress() {
     return "locked";
   };
 
-  const handleSubmit = (step: MilestoneStep, photoFileName: string) => {
+  const handleSubmit = (step: MilestoneStep, photoFileName: string | null) => {
     if (!selectedId) return;
     submitMilestoneEvidence(selectedId, step.status, photoFileName);
     toast.success("Evidence submitted!", {
@@ -488,8 +500,8 @@ export function ContractProgress() {
       <div>
         <h2 className="font-display text-2xl font-bold text-foreground">Contract Progress</h2>
         <p className="text-sm text-muted-foreground">
-          Each milestone requires photo evidence and buyer co-confirmation before
-          progress advances. Escrow only releases after delivery is confirmed by both parties.
+          Each milestone requires buyer co-confirmation before progress advances.
+          Escrow only releases after delivery is confirmed by both parties.
         </p>
       </div>
 
