@@ -1,6 +1,4 @@
-// ContractAiAssistant.tsx (Manager)
-
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,13 +13,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerClose,
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useAppStore, type Contract } from "@/store/useAppStore";
 import {
   Brain,
@@ -36,12 +33,11 @@ import {
   Sparkles,
   Leaf,
   Timer,
-  ShieldAlert,
-  Hourglass,
-  ShieldCheck,
+  Printer,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Average growth days per crop
 const GROWTH_DAYS: Record<string, number> = {
   Tomatoes: 75,
   "Rice (Sinandomeng)": 120,
@@ -90,6 +86,7 @@ function getInsight(contract: Contract): ContractInsight {
     100,
     Math.max(0, (elapsed / totalDuration) * 100),
   );
+
   const growthPercent = Math.min(
     100,
     Math.max(0, (contract.progress / 100) * 100),
@@ -106,27 +103,8 @@ function getInsight(contract: Contract): ContractInsight {
     growthPercent,
   };
 }
-function statusBadge(status: string, contract?: Contract) {
-  if (contract) {
-    if (contract.disputeFlag) {
-      return (
-        <Badge className="border-red-200 bg-red-50 text-red-700">
-          <ShieldAlert className="mr-1 h-3 w-3" /> Disputed
-        </Badge>
-      );
-    }
-    const hasPending = contract.milestoneEvidence?.some(
-      (e) => e.verificationStatus === "pending_verification",
-    );
-    if (hasPending) {
-      return (
-        <Badge className="border-amber-200 bg-amber-50 text-amber-700">
-          <Hourglass className="mr-1 h-3 w-3" /> Awaiting Sign-off
-        </Badge>
-      );
-    }
-  }
 
+function statusBadge(status: string) {
   switch (status) {
     case "pending":
       return (
@@ -160,15 +138,8 @@ function statusBadge(status: string, contract?: Contract) {
         </Badge>
       );
     case "delivered":
-      return contract?.buyerConfirmedDelivery ? (
-        <Badge className="bg-primary text-primary-foreground">
-          <ShieldCheck className="mr-1 h-3 w-3" />
-          Delivered & Verified
-        </Badge>
-      ) : (
-        <Badge className="bg-primary/20 text-primary border border-primary/30">
-          Delivered (Unconfirmed)
-        </Badge>
+      return (
+        <Badge className="bg-primary text-primary-foreground">Delivered</Badge>
       );
     default:
       return <Badge variant="outline">{status}</Badge>;
@@ -180,6 +151,11 @@ export function ContractAiAssistant() {
   const [selectedInsight, setSelectedInsight] =
     useState<ContractInsight | null>(null);
   const [aiThinking, setAiThinking] = useState(true);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setAiThinking(false), 1200);
@@ -198,15 +174,7 @@ export function ContractAiAssistant() {
   const approachingDeadlines = insights.filter((i) => i.isUrgent).length;
   const criticalAlerts = insights.filter((i) => i.pastPlantingWindow);
 
-  const disputedCount = activeContracts.filter((c) => c.disputeFlag).length;
-  const awaitingSignOffCount = activeContracts.filter(
-    (c) =>
-      !c.disputeFlag &&
-      c.milestoneEvidence?.some(
-        (e) => e.verificationStatus === "pending_verification",
-      ),
-  ).length;
-
+  // Persist last analysis timestamp
   useEffect(() => {
     localStorage.setItem(
       "kontratani_ai_last_analysis",
@@ -232,6 +200,7 @@ export function ContractAiAssistant() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
           <Brain className="h-5 w-5 text-primary" />
@@ -247,7 +216,7 @@ export function ContractAiAssistant() {
         </div>
       </div>
 
-      {/* Critical Alerts — unchanged */}
+      {/* Critical Alerts */}
       <AnimatePresence>
         {criticalAlerts.map((i) => (
           <motion.div
@@ -270,35 +239,6 @@ export function ContractAiAssistant() {
           </motion.div>
         ))}
       </AnimatePresence>
-
-      {/* ── NEW: verification alerts — disputed and awaiting sign-off ─────────── */}
-      {disputedCount > 0 && (
-        <Alert className="border-red-300 bg-red-50">
-          <ShieldAlert className="h-4 w-4 text-red-600" />
-          <AlertTitle className="text-red-800 font-semibold">
-            {disputedCount} Contract{disputedCount > 1 ? "s" : ""} Under Dispute
-          </AlertTitle>
-          <AlertDescription className="text-red-700">
-            Escrow is frozen on {disputedCount} contract
-            {disputedCount > 1 ? "s" : ""}. PalAI admin has been notified. No
-            payouts can be distributed until resolved.
-          </AlertDescription>
-        </Alert>
-      )}
-      {awaitingSignOffCount > 0 && (
-        <Alert className="border-amber-200 bg-amber-50">
-          <Hourglass className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-800 font-semibold">
-            {awaitingSignOffCount} Milestone
-            {awaitingSignOffCount > 1 ? "s" : ""} Awaiting Buyer Sign-off
-          </AlertTitle>
-          <AlertDescription className="text-amber-700">
-            Farmer evidence has been submitted and is waiting for buyer
-            co-confirmation. Escrow remains locked until approved.
-          </AlertDescription>
-        </Alert>
-      )}
-      {/* ── END ────────────────────────────────────────────────────────────────── */}
 
       {/* Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
@@ -364,10 +304,7 @@ export function ContractAiAssistant() {
                 <TableHead>Crop</TableHead>
                 <TableHead className="text-right">Quantity</TableHead>
                 <TableHead>Deadline</TableHead>
-                {/* ── MODIFIED: renamed "Status" column to "Crop / Verification" ──
-                    previous: <TableHead>Status</TableHead>
-                ── END ── */}
-                <TableHead>Crop / Verification</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Days Left</TableHead>
                 <TableHead className="text-right">Progress</TableHead>
               </TableRow>
@@ -387,11 +324,8 @@ export function ContractAiAssistant() {
                     {insight.contract.volumeKg.toLocaleString()} kg
                   </TableCell>
                   <TableCell>{insight.contract.targetDate}</TableCell>
-                  {/* ── MODIFIED: pass contract to statusBadge for verification awareness ─
-                      previous: statusBadge(insight.contract.cropStatus)
-                  ── END ── */}
                   <TableCell>
-                    {statusBadge(insight.contract.cropStatus, insight.contract)}
+                    {statusBadge(insight.contract.cropStatus)}
                   </TableCell>
                   <TableCell>
                     <span
@@ -448,13 +382,7 @@ export function ContractAiAssistant() {
               key={i.contract.id}
               className="flex items-start gap-3 rounded-lg border border-border/50 bg-card p-3"
             >
-              {i.contract.disputeFlag ? (
-                <ShieldAlert className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
-              ) : i.contract.milestoneEvidence?.some(
-                  (e) => e.verificationStatus === "pending_verification",
-                ) ? (
-                <Hourglass className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
-              ) : i.pastPlantingWindow ? (
+              {i.pastPlantingWindow ? (
                 <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
               ) : i.isUrgent ? (
                 <Timer className="h-4 w-4 mt-0.5 shrink-0 text-terracotta" />
@@ -465,22 +393,7 @@ export function ContractAiAssistant() {
                 <span className="font-semibold text-foreground">
                   {i.contract.crop}
                 </span>
-                {/* ── NEW: dispute / pending_verification recommendations ─────── */}
-                {i.contract.disputeFlag ? (
-                  <span className="text-red-600">
-                    {" "}
-                    — DISPUTED: Escrow frozen. Awaiting admin resolution before
-                    any payouts.
-                  </span>
-                ) : i.contract.milestoneEvidence?.some(
-                    (e) => e.verificationStatus === "pending_verification",
-                  ) ? (
-                  <span className="text-amber-600">
-                    {" "}
-                    — Milestone evidence submitted. Escrow held until buyer
-                    co-confirms.
-                  </span>
-                ) : i.pastPlantingWindow ? (
+                {i.pastPlantingWindow ? (
                   <span className="text-destructive">
                     {" "}
                     — CRITICAL: Planting window has passed! Must plant
@@ -515,40 +428,37 @@ export function ContractAiAssistant() {
         </CardContent>
       </Card>
 
-      {/* Detail Drawer */}
-      <Drawer
+      {/* Detail Dialog (Print View) */}
+      <Dialog
         open={!!selectedInsight}
         onOpenChange={(open) => !open && setSelectedInsight(null)}
       >
-        <DrawerContent className="max-h-[85vh]">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {selectedInsight && (
-            <div className="mx-auto w-full max-w-lg overflow-y-auto px-4 pb-8">
-              <DrawerHeader className="px-0">
+            <div ref={printRef}>
+              <DialogHeader>
                 <div className="flex items-center justify-between">
-                  <DrawerTitle className="font-display text-xl">
+                  <DialogTitle className="font-display text-xl">
                     {selectedInsight.contract.crop} — Contract Details
-                  </DrawerTitle>
-                  <DrawerClose asChild>
-                    <Button variant="ghost" size="icon">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </DrawerClose>
+                  </DialogTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="print:hidden gap-2"
+                    onClick={handlePrint}
+                  >
+                    <Printer className="h-4 w-4" /> Print
+                  </Button>
                 </div>
-                <DrawerDescription>
+                <DialogDescription>
                   AI-powered analysis for contract {selectedInsight.contract.id}
-                </DrawerDescription>
-              </DrawerHeader>
+                </DialogDescription>
+              </DialogHeader>
 
-              <div className="space-y-5 mt-2">
+              <div className="space-y-5 mt-4">
                 {/* Status Badges */}
                 <div className="flex flex-wrap gap-2">
-                  {/* ── MODIFIED: use updated statusBadge with contract reference ─
-                      previous: statusBadge(selectedInsight.contract.cropStatus)
-                  ── END ── */}
-                  {statusBadge(
-                    selectedInsight.contract.cropStatus,
-                    selectedInsight.contract,
-                  )}
+                  {statusBadge(selectedInsight.contract.cropStatus)}
                   {selectedInsight.isUrgent && (
                     <Badge className="bg-destructive/10 text-destructive border border-destructive/30">
                       <AlertTriangle className="h-3 w-3 mr-1" /> Urgent
@@ -559,28 +469,9 @@ export function ContractAiAssistant() {
                       Planting Overdue
                     </Badge>
                   )}
-                  {/* ── NEW: dispute and pending badges in drawer ─────────────── */}
-                  {selectedInsight.contract.disputeFlag && (
-                    <Badge className="border-red-200 bg-red-50 text-red-700">
-                      <ShieldAlert className="h-3 w-3 mr-1" /> Escrow Frozen
-                    </Badge>
-                  )}
-                  {!selectedInsight.contract.disputeFlag &&
-                    selectedInsight.contract.pendingBuyerConfirmation && (
-                      <Badge className="border-amber-200 bg-amber-50 text-amber-700">
-                        <Hourglass className="h-3 w-3 mr-1" /> Awaiting Buyer
-                      </Badge>
-                    )}
-                  {selectedInsight.contract.buyerConfirmedDelivery && (
-                    <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
-                      <ShieldCheck className="h-3 w-3 mr-1" /> Delivery
-                      Confirmed
-                    </Badge>
-                  )}
-                  {/* ── END ────────────────────────────────────────────────────── */}
                 </div>
 
-                {/* Key Details — unchanged */}
+                {/* Key Details */}
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     {
@@ -633,7 +524,7 @@ export function ContractAiAssistant() {
                   ))}
                 </div>
 
-                {/* Timeline Progress — unchanged */}
+                {/* Timeline Progress */}
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-primary" /> Timeline &
@@ -654,10 +545,7 @@ export function ContractAiAssistant() {
                     </div>
                     <div>
                       <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                        {/* ── MODIFIED: label clarifies this is verified-only progress ─
-                            previous: <span>Growth Progress</span>
-                        ── END ── */}
-                        <span>Verified Growth Progress</span>
+                        <span>Growth Progress</span>
                         <span>
                           {Math.round(selectedInsight.growthPercent)}%
                         </span>
@@ -694,22 +582,17 @@ export function ContractAiAssistant() {
                     <Sparkles className="h-4 w-4" /> AI Assessment
                   </h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    {/* ── NEW: assessment cases for dispute and pending verification ─ */}
-                    {selectedInsight.contract.disputeFlag
-                      ? `This contract is under active dispute. Escrow of ₱${selectedInsight.contract.escrowAmount.toLocaleString()} is frozen pending admin resolution. No field or financial actions can proceed until resolved.`
-                      : selectedInsight.contract.pendingBuyerConfirmation
-                        ? `Delivery evidence has been submitted by the farmer. Waiting on buyer co-confirmation to unlock escrow. This is the final verification step before payout can be distributed.`
-                        : selectedInsight.pastPlantingWindow
-                          ? `This contract is at critical risk. The optimal planting window was ${selectedInsight.mustPlantBy.toLocaleDateString()}, which has already passed. Immediate planting is required with accelerated growth protocols to meet the ${selectedInsight.contract.targetDate} delivery deadline.`
-                          : selectedInsight.isUrgent
-                            ? `This contract requires close monitoring. With only ${selectedInsight.daysRemaining} days remaining, ensure all field operations are on schedule. The cooperative should prioritize harvest preparations and logistics coordination.`
-                            : selectedInsight.contract.cropStatus === "pending"
-                              ? `This contract is awaiting planting. The recommended planting date is before ${selectedInsight.mustPlantBy.toLocaleDateString()} to ensure a ${selectedInsight.growthDays}-day growth cycle plus ${BUFFER_DAYS}-day buffer. Assign farmers and begin soil preparation.`
-                              : `This contract is progressing well at ${Math.round(selectedInsight.growthPercent)}% verified completion with ${selectedInsight.daysRemaining} days to deadline. Continue monitoring field conditions and maintain current pace.`}
+                    {selectedInsight.pastPlantingWindow
+                      ? `This contract is at critical risk. The optimal planting window was ${selectedInsight.mustPlantBy.toLocaleDateString()}, which has already passed. Immediate planting is required with accelerated growth protocols to meet the ${selectedInsight.contract.targetDate} delivery deadline.`
+                      : selectedInsight.isUrgent
+                        ? `This contract requires close monitoring. With only ${selectedInsight.daysRemaining} days remaining, ensure all field operations are on schedule. The cooperative should prioritize harvest preparations and logistics coordination.`
+                        : selectedInsight.contract.cropStatus === "pending"
+                          ? `This contract is awaiting planting. The recommended planting date is before ${selectedInsight.mustPlantBy.toLocaleDateString()} to ensure a ${selectedInsight.growthDays}-day growth cycle plus ${BUFFER_DAYS}-day buffer. Assign farmers and begin soil preparation.`
+                          : `This contract is progressing well at ${Math.round(selectedInsight.growthPercent)}% completion with ${selectedInsight.daysRemaining} days to deadline. Continue monitoring field conditions and maintain current pace.`}
                   </p>
                 </div>
 
-                {/* Cooperative Info — unchanged */}
+                {/* Cooperative Info */}
                 {selectedInsight.contract.matchedCooperative && (
                   <div className="space-y-2">
                     <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -756,8 +639,8 @@ export function ContractAiAssistant() {
               </div>
             </div>
           )}
-        </DrawerContent>
-      </Drawer>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

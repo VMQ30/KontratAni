@@ -80,3 +80,31 @@
   width: 100%;
   border-radius: var(--radius);
 }
+
+@media print {
+  body > * {
+    visibility: hidden;
+  }
+  [role="dialog"] {
+    visibility: visible !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+  [role="dialog"] * {
+    visibility: visible !important;
+  }
+  .print\\:hidden {
+    display: none !important;
+  }
+  [data-radix-dialog-overlay] {
+    display: none !important;
+  }
+}
