@@ -43,17 +43,22 @@ export interface MilestoneEvidence {
 }
 
 // ── Types from useStore ───────────────────────────────────────────────────────
-export type Role = 'buyer' | 'coop_manager' | 'solo_farmer' | 'sub_farmer';
-export type EscrowStatus = 'unfunded' | 'locked' | 'released';
-export type PlotStatus = 'idle' | 'assigned' | 'planted' | 'harvested' | 'declined';
+export type Role = "buyer" | "coop_manager" | "solo_farmer" | "sub_farmer";
+export type EscrowStatus = "unfunded" | "locked" | "released";
+export type PlotStatus =
+  | "idle"
+  | "assigned"
+  | "planted"
+  | "harvested"
+  | "declined";
 
 export interface User {
   id: string;
   name: string;
   role: Role;
   walletBalance: number;
-  payoutMethod: 'Cash' | 'GCash' | 'Maya';
-  smsStatus?: 'pending' | 'notified' | 'planted' | 'declined';
+  payoutMethod: "Cash" | "GCash" | "Maya";
+  smsStatus?: "pending" | "notified" | "planted" | "declined";
 }
 
 export interface TimelineEvent {
@@ -150,12 +155,12 @@ interface AppState {
   soloFarmers: SoloFarmer[];
   activeView: string;
   selectedContractId: string | null;
+  confirmedAllocations: string[];
   users: User[]; // For syncing Farmer smsStatus with useStore users
-  farmPlots: FarmPlot[]; // For syncing Farmer smsStatus with useStore farmPlots  
-
-  // Broadcast messages from manager to farmers
+  farmPlots: FarmPlot[]; // For syncing Farmer smsStatus with useStore farmPlots
   broadcastMessages: BroadcastMessage[];
 
+  confirmAllocation: (contractId: string) => void;
   addBroadcastMessage: (text: string) => void;
   clearBroadcastMessages: () => void;
   setActiveView: (view: string) => void;
@@ -643,7 +648,7 @@ const mockContracts: Contract[] = [
     pendingBuyerConfirmation: false,
     buyerConfirmedDelivery: false,
     disputeFlag: false,
-  }
+  },
 ];
 
 const VERIFIED_PROGRESS_MAP: Record<CropStatus, number> = {
@@ -663,9 +668,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   soloFarmers: mockSoloFarmers,
   activeView: "dashboard",
   selectedContractId: null,
+  confirmedAllocations: JSON.parse(
+    localStorage.getItem("confirmedAllocations") || "[]",
+  ),
   users: [], // Initialize as empty; will sync with useStore for smsStatus
   broadcastMessages: [],
   farmPlots: [], // Initialize as empty; will sync with useStore for smsStatus
+
+  confirmAllocation: (contractId) => {
+    const { confirmedAllocations } = get();
+
+    if (confirmedAllocations.includes(contractId)) return;
+
+    const next = [...confirmedAllocations, contractId];
+    localStorage.setItem("confirmedAllocations", JSON.stringify(next));
+    set({ confirmedAllocations: next });
+  },
 
   addBroadcastMessage: (text) => {
     const msg: BroadcastMessage = {
@@ -793,14 +811,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
 
       // 2. Update User smsStatus (useStore) — map FarmerSmsStatus → useStore smsStatus
-      const userStatus = (['pending', 'notified', 'planted', 'declined'] as const).includes(
-        status as any
-      )
-        ? (status as 'pending' | 'notified' | 'planted' | 'declined')
+      const userStatus = (
+        ["pending", "notified", "planted", "declined"] as const
+      ).includes(status as any)
+        ? (status as "pending" | "notified" | "planted" | "declined")
         : undefined;
 
       const updatedUsers = userStatus
-        ? s.users.map((u) => (u.id === farmerId ? { ...u, smsStatus: userStatus } : u))
+        ? s.users.map((u) =>
+            u.id === farmerId ? { ...u, smsStatus: userStatus } : u,
+          )
         : s.users;
 
       const statusStr = status as string;
@@ -809,16 +829,20 @@ export const useAppStore = create<AppState>((set, get) => ({
           ? {
               ...p,
               status:
-                statusStr === 'declined'
-                  ? ('declined' as PlotStatus)
-                  : statusStr === 'planted' || statusStr === 'harvested'
-                  ? (statusStr as PlotStatus)
-                  : p.status,
+                statusStr === "declined"
+                  ? ("declined" as PlotStatus)
+                  : statusStr === "planted" || statusStr === "harvested"
+                    ? (statusStr as PlotStatus)
+                    : p.status,
             }
-          : p
+          : p,
       );
 
-      return { contracts: updatedContracts, users: updatedUsers, farmPlots: updatedPlots };
+      return {
+        contracts: updatedContracts,
+        users: updatedUsers,
+        farmPlots: updatedPlots,
+      };
     });
   },
 

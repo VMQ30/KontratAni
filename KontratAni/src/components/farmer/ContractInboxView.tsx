@@ -23,6 +23,7 @@ export function ContractInboxView() {
   const acceptContract = useAppStore((s) => s.acceptContract);
   const setActiveView = useAppStore((s) => s.setActiveView);
   const selectContract = useAppStore((s) => s.selectContract);
+  const confirmedAllocations = useAppStore((s) => s.confirmedAllocations);
 
   const pendingContracts = contracts.filter(
     (c) => c.status === "matched" || c.status === "open",
@@ -90,6 +91,7 @@ export function ContractInboxView() {
             {pendingContracts.length})
           </h3>
           {pendingContracts.map((contract) => {
+            const isAllocated = confirmedAllocations.includes(contract.id);
             return (
               <Card
                 key={contract.id}
@@ -140,17 +142,6 @@ export function ContractInboxView() {
                         <X className="h-4 w-4" /> Decline
                       </Button>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1"
-                        onClick={() => {
-                          selectContract(contract.id);
-                          setActiveView("allocation");
-                        }}
-                      >
-                        <Eye className="h-4 w-4" /> View
-                      </Button>
                       <Button
                         size="sm"
                         className="gap-1"
