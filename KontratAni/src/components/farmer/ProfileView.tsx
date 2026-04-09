@@ -129,7 +129,6 @@ export function ProfileView() {
                   <option value="Sandy Loam">Sandy Loam</option>
                   <option value="Silt Loam">Silt Loam</option>
                   <option value="Clay">Clay</option>
-                  <option value="Sand">Sand</option>
                 </select>
               ) : (
                 <div className="flex w-full items-center rounded-md border border-border bg-accent/30 px-3 py-2 text-sm font-medium text-foreground">
