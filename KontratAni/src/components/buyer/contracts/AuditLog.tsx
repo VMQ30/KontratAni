@@ -1,17 +1,14 @@
 // AuditLog.tsx (Buyer — contracts subfolder)
 
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, Leaf,
-  // ── NEW: verification icons ─────────────────────────────────────────────────
-  ShieldCheck, Hourglass, ShieldAlert,
-  // ── END ────────────────────────────────────────────────────────────────────
+import {
+  CheckCircle2,
+  Leaf,
+  ShieldCheck,
+  Hourglass,
+  ShieldAlert,
 } from "lucide-react";
-// ── MODIFIED: added MilestoneEvidence type to import ─────────────────────────
-// previous: import { useAppStore } from "@/store/useAppStore";
 import { useAppStore, type MilestoneEvidence } from "@/store/useAppStore";
-// ── END ──────────────────────────────────────────────────────────────────────
-
-// ── NEW: helper — map a MilestoneEvidence entry to a display-friendly object
 function evidenceToEntry(e: MilestoneEvidence) {
   const cropLabel = e.cropStatus.replace(/_/g, " ");
 
@@ -30,10 +27,11 @@ function evidenceToEntry(e: MilestoneEvidence) {
       icon: ShieldAlert,
       iconClass: "text-red-500",
       text: `${cropLabel} milestone disputed — escrow frozen.`,
-      sub: e.disputeReason ? `Reason: ${e.disputeReason}` : "Pending admin review",
+      sub: e.disputeReason
+        ? `Reason: ${e.disputeReason}`
+        : "Pending admin review",
     };
   }
-  // pending_verification
   return {
     icon: Hourglass,
     iconClass: "text-amber-500",
@@ -43,7 +41,6 @@ function evidenceToEntry(e: MilestoneEvidence) {
       : `Submitted ${new Date(e.submittedAt).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`,
   };
 }
-// ── END ──────────────────────────────────────────────────────────────────────
 
 const AuditLog = () => {
   const { contracts, selectedContractId } = useAppStore();
@@ -55,19 +52,12 @@ const AuditLog = () => {
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-body">
           Real-Time Farmer SMS Updates
         </h2>
-        <p className="text-xs text-muted-foreground">No cooperative data available</p>
+        <p className="text-xs text-muted-foreground">
+          No cooperative data available
+        </p>
       </Card>
     );
   }
-
-  // ── MODIFIED: build entries from two sources — milestoneEvidence (new) +
-  // legacy smsStatus (existing). Milestone evidence entries take priority
-  // for any cropStatus key that has evidence; SMS entries fill the rest.
-  //
-  // previous: entries were derived only from smsStatus on each farmer.
-  // ── END ──────────────────────────────────────────────────────────────────────
-
-  // ── NEW: milestone evidence entries (one per evidence record, latest first) ─
   const evidenceEntries = (contract.milestoneEvidence ?? [])
     .slice()
     .reverse() // most recent first
@@ -81,13 +71,8 @@ const AuditLog = () => {
         isLeaf: false,
       };
     });
-  // ── END ────────────────────────────────────────────────────────────────────
-
-  // ── MODIFIED: original SMS entries kept but filtered to avoid duplication
-  // with evidence entries for statuses already covered by milestoneEvidence.
-  // previous: all smsStatus !== "pending" farmers produced entries unconditionally.
   const evidenceCropStatuses = new Set(
-    (contract.milestoneEvidence ?? []).map((e) => e.cropStatus)
+    (contract.milestoneEvidence ?? []).map((e) => e.cropStatus),
   );
 
   const smsEntries = contract.matchedCooperative.members
@@ -114,13 +99,14 @@ const AuditLog = () => {
         isLeaf: false,
       };
     })
-    .filter(Boolean) as { icon: any; iconClass: string; text: string; time: string; isLeaf: boolean }[];
-  // ── END ────────────────────────────────────────────────────────────────────
-
-  // ── MODIFIED: combined entries — evidence first, then SMS ─────────────────
-  // previous: only smsEntries, max 5, with a leaf placeholder when empty.
+    .filter(Boolean) as {
+    icon: any;
+    iconClass: string;
+    text: string;
+    time: string;
+    isLeaf: boolean;
+  }[];
   const allEntries = [...evidenceEntries, ...smsEntries].slice(0, 8);
-  // ── END ────────────────────────────────────────────────────────────────────
 
   if (allEntries.length === 0) {
     allEntries.push({

@@ -1,12 +1,36 @@
 // useAppStore.ts
 
-import { create } from 'zustand';
+import { create } from "zustand";
 
-export type CropStatus = 'pending' | 'seeds_planted' | 'fertilized' | 'growing' | 'ready_for_harvest' | 'harvested' | 'delivered';
-export type ContractStatus = 'open' | 'matched' | 'accepted' | 'funded' | 'in_progress' | 'completed' | 'declined';
-export type FarmerSmsStatus = 'pending' | 'notified' | 'confirmed' | 'planted' | 'harvested';
+export type CropStatus =
+  | "pending"
+  | "seeds_planted"
+  | "fertilized"
+  | "growing"
+  | "ready_for_harvest"
+  | "harvested"
+  | "delivered";
 
-export type MilestoneVerificationStatus = 'pending_verification' | 'verified' | 'disputed';
+export type ContractStatus =
+  | "open"
+  | "matched"
+  | "accepted"
+  | "funded"
+  | "in_progress"
+  | "completed"
+  | "declined";
+
+export type FarmerSmsStatus =
+  | "pending"
+  | "notified"
+  | "confirmed"
+  | "planted"
+  | "harvested";
+
+export type MilestoneVerificationStatus =
+  | "pending_verification"
+  | "verified"
+  | "disputed";
 
 export interface MilestoneEvidence {
   cropStatus: CropStatus;
@@ -56,7 +80,7 @@ export interface Farmer {
   soilType: string;
   smsStatus: FarmerSmsStatus;
   assignedKg: number;
-  payoutMethod: 'cash' | 'gcash' | 'maya';
+  payoutMethod: "cash" | "gcash" | "maya";
   paid: boolean;
 }
 
@@ -82,7 +106,7 @@ export interface SoloFarmer {
   soilType: string;
   smsStatus: FarmerSmsStatus;
   assignedKg: number;
-  payoutMethod: 'cash' | 'gcash' | 'maya';
+  payoutMethod: "cash" | "gcash" | "maya";
   paid: boolean;
 }
 
@@ -135,123 +159,481 @@ interface AppState {
   declineContract: (contractId: string) => void;
   fundContract: (contractId: string) => void;
   updateCropStatus: (contractId: string, status: CropStatus) => void;
-  updateFarmerSmsStatus: (contractId: string, farmerId: string, status: FarmerSmsStatus) => void;
+  updateFarmerSmsStatus: (
+    contractId: string,
+    farmerId: string,
+    status: FarmerSmsStatus,
+  ) => void;
   addCoopMember: (coopId: string, farmer: Farmer) => void;
   removeCoopMember: (coopId: string, farmerId: string) => void;
-  updateCoopMemberCrops: (coopId: string, farmerId: string, crops: string[]) => void;
+  updateCoopMemberCrops: (
+    coopId: string,
+    farmerId: string,
+    crops: string[],
+  ) => void;
+  submitMilestoneEvidence: (
+    contractId: string,
+    cropStatus: CropStatus,
+    photoFileName: string,
+  ) => void;
+  verifyMilestone: (contractId: string, cropStatus: CropStatus) => void;
+  disputeMilestone: (
+    contractId: string,
+    cropStatus: CropStatus,
+    reason: string,
+  ) => void;
+  resolveDispute: (contractId: string) => void;
+  resetContracts: () => void;
+  updateContract: (contractId: string, partial: Partial<Contract>) => void;
 }
 
+// ── Mock farmers ──────────────────────────────────────────────────────────────
 const mockFarmers: Farmer[] = [
-  { id: 'f1', name: 'Juan dela Cruz',  hectares: 2.5, location: 'Brgy. San Jose',   lat: 14.58, lng: 121.0,  soilType: 'Loam',       smsStatus: 'pending', assignedKg: 0, payoutMethod: 'gcash', paid: false },
-  { id: 'f2', name: 'Maria Santos',    hectares: 1.8, location: 'Brgy. Sta. Rosa',  lat: 14.61, lng: 121.02, soilType: 'Clay Loam',  smsStatus: 'pending', assignedKg: 0, payoutMethod: 'maya',  paid: false },
-  { id: 'f3', name: 'Pedro Reyes',     hectares: 3.0, location: 'Brgy. Bagumbayan', lat: 14.56, lng: 120.98, soilType: 'Sandy Loam', smsStatus: 'pending', assignedKg: 0, payoutMethod: 'cash',  paid: false },
-  { id: 'f4', name: 'Ana Flores',      hectares: 2.2, location: 'Brgy. Maligaya',   lat: 14.59, lng: 121.04, soilType: 'Loam',       smsStatus: 'pending', assignedKg: 0, payoutMethod: 'gcash', paid: false },
-  { id: 'f5', name: 'Ricardo Mendoza', hectares: 4.0, location: 'Brgy. Pag-asa',    lat: 14.63, lng: 120.96, soilType: 'Silt Loam',  smsStatus: 'pending', assignedKg: 0, payoutMethod: 'cash',  paid: false },
+  {
+    id: "f1",
+    name: "Juan dela Cruz",
+    hectares: 2.5,
+    location: "Brgy. San Jose",
+    lat: 14.58,
+    lng: 121.0,
+    soilType: "Loam",
+    smsStatus: "pending",
+    assignedKg: 0,
+    payoutMethod: "gcash",
+    paid: false,
+  },
+  {
+    id: "f2",
+    name: "Maria Santos",
+    hectares: 1.8,
+    location: "Brgy. Sta. Rosa",
+    lat: 14.61,
+    lng: 121.02,
+    soilType: "Clay Loam",
+    smsStatus: "pending",
+    assignedKg: 0,
+    payoutMethod: "maya",
+    paid: false,
+  },
+  {
+    id: "f3",
+    name: "Pedro Reyes",
+    hectares: 3.0,
+    location: "Brgy. Bagumbayan",
+    lat: 14.56,
+    lng: 120.98,
+    soilType: "Sandy Loam",
+    smsStatus: "pending",
+    assignedKg: 0,
+    payoutMethod: "cash",
+    paid: false,
+  },
+  {
+    id: "f4",
+    name: "Ana Flores",
+    hectares: 2.2,
+    location: "Brgy. Maligaya",
+    lat: 14.59,
+    lng: 121.04,
+    soilType: "Loam",
+    smsStatus: "pending",
+    assignedKg: 0,
+    payoutMethod: "gcash",
+    paid: false,
+  },
+  {
+    id: "f5",
+    name: "Ricardo Mendoza",
+    hectares: 4.0,
+    location: "Brgy. Pag-asa",
+    lat: 14.63,
+    lng: 120.96,
+    soilType: "Silt Loam",
+    smsStatus: "pending",
+    assignedKg: 0,
+    payoutMethod: "cash",
+    paid: false,
+  },
 ];
 
 // ── Mock cooperatives ─────────────────────────────────────────────────────────
 const mockCooperatives: Cooperative[] = [
-  { id: 'coop1', name: 'Quezon Farmers Cooperative', region: 'Quezon Province',  lat: 14.59, lng: 121.01, totalHectares: 13.5, soilScore: 87, weatherScore: 92, members: mockFarmers.slice(0, 3) },
-  { id: 'coop2', name: 'Laguna Harvest Alliance',    region: 'Laguna Province',   lat: 14.27, lng: 121.41, totalHectares: 9.0,  soilScore: 91, weatherScore: 85, members: mockFarmers.slice(2, 5) },
-  { id: 'coop3', name: 'Batangas Green Growers',     region: 'Batangas Province', lat: 13.76, lng: 121.06, totalHectares: 18.2, soilScore: 94, weatherScore: 88, members: mockFarmers },
-];
-
-const mocksoloFarmers: SoloFarmer[] = [
   {
-    id: 'sf1', name: 'Luzviminda Garcia', hectares: 1.5, location: 'Brgy. San Isidro',
-    lat: 14.57, lng: 121.03, soilType: 'Loam', smsStatus: 'pending', assignedKg: 0,
-    payoutMethod: 'gcash', paid: false,
+    id: "coop1",
+    name: "Quezon Farmers Cooperative",
+    region: "Quezon Province",
+    lat: 14.59,
+    lng: 121.01,
+    totalHectares: 13.5,
+    soilScore: 87,
+    weatherScore: 92,
+    members: mockFarmers.slice(0, 3),
   },
   {
-    id: 'sf2', name: 'Manuel Santos', hectares: 2.0, location: 'Brgy. Santa Cruz',
-    lat: 14.60, lng: 121.05, soilType: 'Silt Loam', smsStatus: 'pending', assignedKg: 0,
-    payoutMethod: 'maya', paid: false,
+    id: "coop2",
+    name: "Laguna Harvest Alliance",
+    region: "Laguna Province",
+    lat: 14.27,
+    lng: 121.41,
+    totalHectares: 9.0,
+    soilScore: 91,
+    weatherScore: 85,
+    members: mockFarmers.slice(2, 5),
+  },
+  {
+    id: "coop3",
+    name: "Batangas Green Growers",
+    region: "Batangas Province",
+    lat: 13.76,
+    lng: 121.06,
+    totalHectares: 18.2,
+    soilScore: 94,
+    weatherScore: 88,
+    members: mockFarmers,
   },
 ];
 
-// MOCK CONTRACTS — 7 scenarios, one per verification lifecycle state.
-// Each contract is designed so judges can open any portal and immediately see
-// a live interactive state without needing to set anything up first.
-//
-// Scenario map:
-//   c1  Coop    — accepted, no escrow            → DirectPayout: "locked"
-//   c2  Coop    — in_progress, escrow funded     → DirectPayout: "escrow_funded", next step submittable
-//   c3  Coop    — milestone pending_verification  → ContractProgress: amber badge, AuditLog shows entry
-//   c4  Solo    — delivery pending buyer confirm  → ContractsView: amber "Confirm Delivery" banner
-//   c5  Coop    — disputed, escrow frozen         → PayoutView: locked, DisputeFrozenBanner visible
-//   c6  Coop    — buyer confirmed, payout ready   → PayoutView: Distribute button enabled
-//   c7  Solo    — completed, payout paid         → DirectPayout: "paid" stage, transaction record
-//
-// This array is also used by resetContracts() — it is a named const (not inline)
-// so the reset action can reference the original values cleanly.
+// ── Mock solo farmers ─────────────────────────────────────────────────────────
+const mockSoloFarmers: SoloFarmer[] = [
+  {
+    id: "sf1",
+    name: "Luzviminda Garcia",
+    hectares: 13.5,
+    location: "Brgy. San Isidro",
+    lat: 14.57,
+    lng: 121.03,
+    soilType: "Loam",
+    smsStatus: "pending",
+    assignedKg: 0,
+    payoutMethod: "gcash",
+    paid: false,
+  },
+  {
+    id: "sf2",
+    name: "Manuel Santos",
+    hectares: 2.0,
+    location: "Brgy. Santa Cruz",
+    lat: 14.6,
+    lng: 121.05,
+    soilType: "Silt Loam",
+    smsStatus: "pending",
+    assignedKg: 0,
+    payoutMethod: "maya",
+    paid: false,
+  },
+];
+
 const mockContracts: Contract[] = [
-
-  // ── Scenario 1 — Coop, accepted, no escrow ───────────────────────────────
-  // What judges see:
-  //   Buyer portal → ContractsView: "Lock Funds in Escrow" button available
-  //   DirectPayoutView (farmer portal): "Escrow Not Yet Funded" locked banner
-  //   ContractProgress: "seeds_planted" step is the next submittable step
-  // What they can do:
-  //   Click "Lock Funds in Escrow" → escrow funded → state advances to scenario 2
   {
-    id: 'c1', crop: 'Tomatoes', volumeKg: 5000, targetDate: '2026-06-15',
-    status: 'in_progress', cropStatus: 'growing', progress: 60,
-    buyerName: 'Metro Fresh Foods', matchedCooperative: mockCooperatives[0],
-    escrowAmount: 150000, createdAt: '2026-01-10',
-  },
-
-  // ── Scenario 3 — Coop, milestone pending_verification ────────────────────
-  // What judges see:
-  //   ContractProgress: "ready_for_harvest" step shows amber Hourglass + "Awaiting buyer sign-off"
-  //   AuditLog (buyer): pending evidence entry at the top of the log
-  //   MilestoneStepper: amber node on "Ready for Harvest"
-  //   ContractAiAssistant: "Awaiting Sign-off" badge in contract table
-  // What they can do:
-  //   Buyer portal → ContractsView → click the contract → no confirm banner (not delivery yet)
-  //   DemoOverlay → "Buyer: Verify Milestone" → milestone confirmed → progress advances
-  //   OR DemoOverlay → "Buyer: Dispute Milestone" → escrow frozen → advances to scenario 5
-  {
-    id: 'c2', crop: 'Rice (Sinandomeng)', volumeKg: 10000, targetDate: '2026-08-01',
-    status: 'funded', cropStatus: 'seeds_planted', progress: 25,
-    buyerName: 'Metro Fresh Foods', matchedCooperative: mockCooperatives[2],
-    escrowAmount: 450000, createdAt: '2026-02-01',
+    id: "c1",
+    crop: "Kamatis (Tomatoes)",
+    volumeKg: 5000,
+    targetDate: "2026-09-15",
+    status: "accepted",
+    cropStatus: "pending",
+    progress: 0,
+    buyerName: "Metro Fresh Foods",
+    matchedCooperative: mockCooperatives[0],
+    escrowAmount: 0,
+    createdAt: "2026-03-01",
+    milestoneEvidence: [],
+    pendingBuyerConfirmation: false,
+    buyerConfirmedDelivery: false,
+    disputeFlag: false,
   },
   {
-    id: 'c3', crop: 'Onions (Red)', volumeKg: 3000, targetDate: '2026-05-20',
-    status: 'matched', cropStatus: 'pending', progress: 10,
-    buyerName: 'Metro Fresh Foods', matchedCooperative: mockCooperatives[1],
-    escrowAmount: 0, createdAt: '2026-03-05',
+    id: "c2",
+    crop: "Sibuyas (Onions)",
+    volumeKg: 3000,
+    targetDate: "2026-08-20",
+    status: "in_progress",
+    cropStatus: "growing",
+    progress: 60,
+    buyerName: "Metro Fresh Foods",
+    matchedCooperative: mockCooperatives[1],
+    escrowAmount: 90000,
+    createdAt: "2026-02-10",
+    milestoneEvidence: [
+      {
+        cropStatus: "seeds_planted",
+        photoFileName: "seeds_c2.jpg",
+        submittedAt: "2026-02-20T08:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-02-20T14:00:00Z",
+      },
+      {
+        cropStatus: "fertilized",
+        photoFileName: "fertilized_c2.jpg",
+        submittedAt: "2026-03-05T09:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-03-05T16:00:00Z",
+      },
+      {
+        cropStatus: "growing",
+        photoFileName: "growing_c2.jpg",
+        submittedAt: "2026-03-18T10:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-03-18T15:00:00Z",
+      },
+    ],
+    pendingBuyerConfirmation: false,
+    buyerConfirmedDelivery: false,
+    disputeFlag: false,
   },
+  {
+    id: "c4",
+    crop: "Pechay (Bok Choy)",
+    volumeKg: 800,
+    targetDate: "2026-06-01",
+    status: "in_progress",
+    cropStatus: "delivered",
+    progress: 95,
+    buyerName: "Luzviminda Garcia (Solo Farmer)",
+    matchedCooperative: undefined,
+    escrowAmount: 24000,
+    createdAt: "2026-01-05",
+    milestoneEvidence: [
+      {
+        cropStatus: "seeds_planted",
+        photoFileName: "seeds_c4_solo.jpg",
+        submittedAt: "2026-01-15T08:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-01-15T12:00:00Z",
+      },
+      {
+        cropStatus: "fertilized",
+        photoFileName: "fert_c4_solo.jpg",
+        submittedAt: "2026-01-28T09:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-01-28T14:00:00Z",
+      },
+      {
+        cropStatus: "growing",
+        photoFileName: "growing_c4_solo.jpg",
+        submittedAt: "2026-02-10T10:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-02-10T16:00:00Z",
+      },
+      {
+        cropStatus: "ready_for_harvest",
+        photoFileName: "harvest_c4_solo.jpg",
+        submittedAt: "2026-02-22T07:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-02-22T11:00:00Z",
+      },
+      {
+        cropStatus: "harvested",
+        photoFileName: "harvested_c4_solo.jpg",
+        submittedAt: "2026-03-05T08:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-03-05T13:00:00Z",
+      },
+      {
+        cropStatus: "delivered",
+        photoFileName: "delivery_c4_solo.jpg",
+        submittedAt: "2026-03-19T06:00:00Z",
+        verificationStatus: "pending_verification",
+      },
+    ],
+    pendingBuyerConfirmation: true,
+    buyerConfirmedDelivery: false,
+    disputeFlag: false,
+  },
+  {
+    id: "c5",
+    crop: "Ampalaya (Bitter Gourd)",
+    volumeKg: 1500,
+    targetDate: "2026-06-10",
+    status: "in_progress",
+    cropStatus: "delivered",
+    progress: 80,
+    buyerName: "LGU Feeding Program",
+    matchedCooperative: mockCooperatives[1],
+    escrowAmount: 45000,
+    createdAt: "2026-01-20",
+    milestoneEvidence: [
+      {
+        cropStatus: "seeds_planted",
+        photoFileName: "seeds_c5.jpg",
+        submittedAt: "2026-02-01T08:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-02-01T13:00:00Z",
+      },
+      {
+        cropStatus: "fertilized",
+        photoFileName: "fert_c5.jpg",
+        submittedAt: "2026-02-15T09:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-02-15T15:00:00Z",
+      },
+      {
+        cropStatus: "delivered",
+        photoFileName: "delivery_c5.jpg",
+        submittedAt: "2026-03-15T07:00:00Z",
+        verificationStatus: "disputed",
+        disputeReason:
+          "Photo shows different crop variety than contracted. Volume appears significantly below 1,500 kg.",
+      },
+    ],
+    pendingBuyerConfirmation: false,
+    buyerConfirmedDelivery: false,
+    disputeFlag: true,
+  },
+  {
+    id: "c6",
+    crop: "Saging (Banana)",
+    volumeKg: 4000,
+    targetDate: "2026-05-30",
+    status: "completed",
+    cropStatus: "delivered",
+    progress: 100,
+    buyerName: "Metro Fresh Foods",
+    matchedCooperative: mockCooperatives[2],
+    escrowAmount: 120000,
+    createdAt: "2025-12-01",
+    milestoneEvidence: [
+      {
+        cropStatus: "seeds_planted",
+        photoFileName: "seeds_c6.jpg",
+        submittedAt: "2025-12-15T08:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2025-12-15T13:00:00Z",
+      },
+      {
+        cropStatus: "fertilized",
+        photoFileName: "fert_c6.jpg",
+        submittedAt: "2025-12-28T09:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2025-12-28T14:00:00Z",
+      },
+      {
+        cropStatus: "growing",
+        photoFileName: "growing_c6.jpg",
+        submittedAt: "2026-01-10T10:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-01-10T15:00:00Z",
+      },
+      {
+        cropStatus: "ready_for_harvest",
+        photoFileName: "harvest_c6.jpg",
+        submittedAt: "2026-02-01T07:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-02-01T11:00:00Z",
+      },
+      {
+        cropStatus: "harvested",
+        photoFileName: "harvested_c6.jpg",
+        submittedAt: "2026-02-15T08:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-02-15T13:00:00Z",
+      },
+      {
+        cropStatus: "delivered",
+        photoFileName: "delivery_c6.jpg",
+        submittedAt: "2026-03-01T06:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-03-01T10:00:00Z",
+      },
+    ],
+    pendingBuyerConfirmation: false,
+    buyerConfirmedDelivery: true,
+    disputeFlag: false,
+  },
+  {
+    id: "c7",
+    crop: "Mangga (Mango)",
+    volumeKg: 1200,
+    targetDate: "2026-04-30",
+    status: "completed",
+    cropStatus: "delivered",
+    progress: 100,
+    buyerName: "Manuel Santos (Solo Farmer)",
+    matchedCooperative: undefined,
+    escrowAmount: 36000,
+    createdAt: "2025-11-01",
+    milestoneEvidence: [
+      {
+        cropStatus: "seeds_planted",
+        photoFileName: "seeds_c7_solo.jpg",
+        submittedAt: "2025-11-15T08:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2025-11-15T13:00:00Z",
+      },
+      {
+        cropStatus: "fertilized",
+        photoFileName: "fert_c7_solo.jpg",
+        submittedAt: "2025-11-28T09:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2025-11-28T14:00:00Z",
+      },
+      {
+        cropStatus: "growing",
+        photoFileName: "growing_c7_solo.jpg",
+        submittedAt: "2025-12-10T10:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2025-12-10T15:00:00Z",
+      },
+      {
+        cropStatus: "ready_for_harvest",
+        photoFileName: "harvest_c7_solo.jpg",
+        submittedAt: "2026-01-05T07:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-01-05T11:00:00Z",
+      },
+      {
+        cropStatus: "harvested",
+        photoFileName: "harvested_c7_solo.jpg",
+        submittedAt: "2026-01-20T08:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-01-20T13:00:00Z",
+      },
+      {
+        cropStatus: "delivered",
+        photoFileName: "delivery_c7_solo.jpg",
+        submittedAt: "2026-02-10T06:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-02-10T10:00:00Z",
+      },
+    ],
+    pendingBuyerConfirmation: false,
+    buyerConfirmedDelivery: true,
+    disputeFlag: false,
+  },
+  {
+    id: "c8",
+    crop: "Eggplant",
+    volumeKg: 500,
+    targetDate: "2026-10-15",
+    status: "matched",
+    cropStatus: "pending",
+    progress: 0,
+    buyerName: "Makati Fresh Market",
+    matchedCooperative: mockCooperatives[0],
+    escrowAmount: 0,
+    createdAt: "2026-03-20",
+    milestoneEvidence: [],
+    pendingBuyerConfirmation: false,
+    buyerConfirmedDelivery: false,
+    disputeFlag: false,
+  }
 ];
 
 const VERIFIED_PROGRESS_MAP: Record<CropStatus, number> = {
-  pending:            0,
-  seeds_planted:     25,
-  fertilized:        40,
-  growing:           60,
+  pending: 0,
+  seeds_planted: 25,
+  fertilized: 40,
+  growing: 60,
   ready_for_harvest: 80,
-  harvested:         95,
-  delivered:        100,
+  harvested: 95,
+  delivered: 100,
 };
 
-// ── Mock data (useStore) ──────────────────────────────────────────────────────
-const initialUsers: User[] = [
-  { id: 'farmer_01', name: 'Juan Dela Cruz', role: 'sub_farmer', walletBalance: 0, payoutMethod: 'GCash', smsStatus: 'pending' },
-  { id: 'farmer_02', name: 'Maria Santos',   role: 'sub_farmer', walletBalance: 0, payoutMethod: 'Cash',  smsStatus: 'pending' },
-];
-
-const initialPlots: FarmPlot[] = [
-  { id: 'plot_A', ownerId: 'coop_01', assignedFarmerId: null, coordinates: [14.5995, 120.9842], status: 'idle', currentContractId: null },
-  { id: 'plot_B', ownerId: 'coop_01', assignedFarmerId: null, coordinates: [14.6010, 120.9850], status: 'idle', currentContractId: null },
-];
-
-// ── Store ─────────────────────────────────────────────────────────────────────
 export const useAppStore = create<AppState>((set, get) => ({
   // ── useAppStore initial state ──────────────────────────────────────────────
   contracts: mockContracts,
   cooperatives: mockCooperatives,
   soloFarmers: mockSoloFarmers,
-  activeView: 'dashboard',
+  activeView: "dashboard",
   selectedContractId: null,
   broadcastMessages: [],
 
@@ -259,13 +641,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     const msg: BroadcastMessage = {
       id: `bcast-${Date.now()}`,
       text,
-      time: new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }),
+      time: new Date().toLocaleTimeString("en-PH", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
     set((s) => ({ broadcastMessages: [...s.broadcastMessages, msg] }));
   },
   clearBroadcastMessages: () => set({ broadcastMessages: [] }),
-  setActiveView:  (view) => set({ activeView: view }),
-  selectContract: (id)   => set({ selectedContractId: id }),
+  setActiveView: (view) => set({ activeView: view }),
+  selectContract: (id) => set({ selectedContractId: id }),
 
   addContract: (demand) => {
     const newContract: Contract = {
@@ -273,12 +658,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       crop: demand.crop,
       volumeKg: demand.volumeKg,
       targetDate: demand.targetDate,
-      status: 'open',
-      cropStatus: 'pending',
+      status: "open",
+      cropStatus: "pending",
       progress: 0,
-      buyerName: 'Metro Fresh Foods',
+      buyerName: "Metro Fresh Foods",
       escrowAmount: 0,
-      createdAt: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString().split("T")[0],
+      milestoneEvidence: [],
+      pendingBuyerConfirmation: false,
+      buyerConfirmedDelivery: false,
+      disputeFlag: false,
     };
     set((s) => ({ contracts: [...s.contracts, newContract] }));
     return newContract;
@@ -290,7 +679,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({
       contracts: s.contracts.map((c) =>
         c.id === contractId
-          ? { ...c, status: 'matched' as ContractStatus, matchedCooperative: coop, progress: 10 }
+          ? {
+              ...c,
+              status: "matched" as ContractStatus,
+              matchedCooperative: coop,
+              progress: 10,
+            }
           : c,
       ),
     }));
@@ -300,7 +694,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   acceptContract: (contractId) => {
     set((s) => ({
       contracts: s.contracts.map((c) =>
-        c.id === contractId ? { ...c, status: 'accepted' as ContractStatus, progress: 15 } : c
+        c.id === contractId
+          ? { ...c, status: "accepted" as ContractStatus, progress: 15 }
+          : c,
       ),
     }));
   },
@@ -308,7 +704,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   declineContract: (contractId) => {
     set((s) => ({
       contracts: s.contracts.map((c) =>
-        c.id === contractId ? { ...c, status: 'declined' as ContractStatus, progress: 0 } : c,
+        c.id === contractId
+          ? { ...c, status: "declined" as ContractStatus, progress: 0 }
+          : c,
       ),
     }));
   },
@@ -317,8 +715,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({
       contracts: s.contracts.map((c) =>
         c.id === contractId
-          ? { ...c, status: 'funded' as ContractStatus, escrowAmount: c.volumeKg * 30, progress: Math.max(c.progress, 20) }
-          : c
+          ? {
+              ...c,
+              status: "funded" as ContractStatus,
+              escrowAmount: c.volumeKg * 30,
+              progress: Math.max(c.progress, 20),
+            }
+          : c,
       ),
     }));
   },
@@ -330,8 +733,11 @@ export const useAppStore = create<AppState>((set, get) => ({
           ? {
               ...c,
               cropStatus: status,
-              progress: progressMap[status],
-              status: status === 'delivered' ? ('completed' as ContractStatus) : c.status,
+              progress: VERIFIED_PROGRESS_MAP[status],
+              status:
+                status === "delivered"
+                  ? ("completed" as ContractStatus)
+                  : c.status,
             }
           : c,
       ),
@@ -393,7 +799,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({
       cooperatives: s.cooperatives.map((coop) =>
         coop.id === coopId
-          ? { ...coop, members: [...coop.members, farmer], totalHectares: parseFloat((coop.totalHectares + farmer.hectares).toFixed(2)) }
+          ? {
+              ...coop,
+              members: [...coop.members, farmer],
+              totalHectares: parseFloat(
+                (coop.totalHectares + farmer.hectares).toFixed(2),
+              ),
+            }
           : coop,
       ),
     }));
@@ -407,7 +819,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         return {
           ...coop,
           members: coop.members.filter((f) => f.id !== farmerId),
-          totalHectares: parseFloat((coop.totalHectares - (removed?.hectares ?? 0)).toFixed(2)),
+          totalHectares: parseFloat(
+            (coop.totalHectares - (removed?.hectares ?? 0)).toFixed(2),
+          ),
         };
       }),
     }));
@@ -418,7 +832,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       cooperatives: s.cooperatives.map((coop) =>
         coop.id !== coopId
           ? coop
-          : { ...coop, members: coop.members.map((f) => (f.id === farmerId ? { ...f, crops } as any : f)) },
+          : {
+              ...coop,
+              members: coop.members.map((f) =>
+                f.id === farmerId ? ({ ...f, crops } as any) : f,
+              ),
+            },
       ),
     }));
   },
@@ -428,20 +847,25 @@ export const useAppStore = create<AppState>((set, get) => ({
       cropStatus,
       photoFileName,
       submittedAt: new Date().toISOString(),
-      verificationStatus: 'pending_verification',
+      verificationStatus: "pending_verification",
     };
     set((s) => ({
       contracts: s.contracts.map((c) => {
         if (c.id !== contractId) return c;
-        const existingIdx = c.milestoneEvidence.findIndex((e) => e.cropStatus === cropStatus);
+        const existingIdx = c.milestoneEvidence.findIndex(
+          (e) => e.cropStatus === cropStatus,
+        );
         const updatedEvidence =
           existingIdx >= 0
-            ? c.milestoneEvidence.map((e, i) => (i === existingIdx ? evidence : e))
+            ? c.milestoneEvidence.map((e, i) =>
+                i === existingIdx ? evidence : e,
+              )
             : [...c.milestoneEvidence, evidence];
         return {
           ...c,
           cropStatus,
-          pendingBuyerConfirmation: cropStatus === 'delivered' ? true : c.pendingBuyerConfirmation,
+          pendingBuyerConfirmation:
+            cropStatus === "delivered" ? true : c.pendingBuyerConfirmation,
           milestoneEvidence: updatedEvidence,
         };
       }),
@@ -454,16 +878,22 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (c.id !== contractId) return c;
         const updatedEvidence = c.milestoneEvidence.map((e) =>
           e.cropStatus === cropStatus
-            ? { ...e, verificationStatus: 'verified' as MilestoneVerificationStatus, verifiedAt: new Date().toISOString() }
+            ? {
+                ...e,
+                verificationStatus: "verified" as MilestoneVerificationStatus,
+                verifiedAt: new Date().toISOString(),
+              }
             : e,
         );
-        const isDelivery = cropStatus === 'delivered';
+        const isDelivery = cropStatus === "delivered";
         return {
           ...c,
           progress: VERIFIED_PROGRESS_MAP[cropStatus],
-          status: isDelivery ? ('completed' as ContractStatus) : c.status,
+          status: isDelivery ? ("completed" as ContractStatus) : c.status,
           buyerConfirmedDelivery: isDelivery ? true : c.buyerConfirmedDelivery,
-          pendingBuyerConfirmation: isDelivery ? false : c.pendingBuyerConfirmation,
+          pendingBuyerConfirmation: isDelivery
+            ? false
+            : c.pendingBuyerConfirmation,
           milestoneEvidence: updatedEvidence,
         };
       }),
@@ -476,7 +906,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (c.id !== contractId) return c;
         const updatedEvidence = c.milestoneEvidence.map((e) =>
           e.cropStatus === cropStatus
-            ? { ...e, verificationStatus: 'disputed' as MilestoneVerificationStatus, disputeReason: reason }
+            ? {
+                ...e,
+                verificationStatus: "disputed" as MilestoneVerificationStatus,
+                disputeReason: reason,
+              }
             : e,
         );
         return { ...c, disputeFlag: true, milestoneEvidence: updatedEvidence };
@@ -489,8 +923,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       contracts: s.contracts.map((c) => {
         if (c.id !== contractId) return c;
         const updatedEvidence = c.milestoneEvidence.map((e) =>
-          e.verificationStatus === 'disputed'
-            ? { ...e, verificationStatus: 'pending_verification' as MilestoneVerificationStatus, disputeReason: undefined }
+          e.verificationStatus === "disputed"
+            ? {
+                ...e,
+                verificationStatus:
+                  "pending_verification" as MilestoneVerificationStatus,
+                disputeReason: undefined,
+              }
             : e,
         );
         return { ...c, disputeFlag: false, milestoneEvidence: updatedEvidence };
@@ -498,19 +937,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
-  // ── new code starts here ────────────────────────────────────────────────────
-  // resetContracts: deep-clones mockContracts back into the store.
-  // JSON round-trip breaks all object references so React re-renders cleanly.
   resetContracts: () => {
     set({
       contracts: JSON.parse(JSON.stringify(mockContracts)),
       selectedContractId: null,
     });
   },
-
-  // updateContract: dev-only direct partial merge for the DemoOverlay editor.
-  // Spreads `partial` over the matching contract — whatever fields are provided
-  // are overwritten; nothing else is touched. No computed side-effects fire.
   updateContract: (contractId, partial) => {
     set((s) => ({
       contracts: s.contracts.map((c) =>

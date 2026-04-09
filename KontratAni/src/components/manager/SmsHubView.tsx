@@ -262,10 +262,19 @@ export function SmsHubView() {
   }
 
   const coop = contract.matchedCooperative;
+  
+  const statusColorMap: Record<string, { color: string; label: string }> = {
+    pending: { color: "#e4e3df", label: "Pending" },
+    notified: { color: "#d4a574", label: "SMS Sent" },
+    confirmed: { color: "#8b5cf6", label: "Confirmed" },
+    planted: { color: "#3b82f6", label: "Planted" },
+    harvested: { color: "#22c55e", label: "Harvested" },
+  };
+
   const plots = coop.members.map((farmer) => ({
     name: `${farmer.name.split(" ")[0]}'s Plot`,
     yield: `${Math.round(contract.volumeKg / coop.members.length)} kg est.`,
-    status: farmer.smsStatus === "pending" ? "Pending" : "Active",
+    status: statusColorMap[farmer.smsStatus]?.label || "Unknown",
   }));
 
   return (
@@ -475,8 +484,11 @@ export function SmsHubView() {
                           "fill-color": [
                             "match",
                             ["get", "status"],
-                            "pending",
-                            "#e4e3df",
+                            "pending", "#e4e3df",
+                            "notified", "#d4a574",
+                            "confirmed", "#8b5cf6",
+                            "planted", "#3b82f6",
+                            "harvested", "#22c55e",
                             "#22c55e",
                           ],
                           "fill-opacity": 0.9,
@@ -489,6 +501,23 @@ export function SmsHubView() {
                         paint={{
                           "line-color": "#ffffff",
                           "line-width": 2,
+                        }}
+                      />
+                      <Layer
+                        id="plot-labels"
+                        type="symbol"
+                        source="plot-data"
+                        layout={{
+                          "text-field": ["get", "name"],
+                          "text-size": 12,
+                          "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+                          "text-offset": [0, 0.6],
+                          "text-anchor": "top",
+                        }}
+                        paint={{
+                          "text-color": "#1f2937",
+                          "text-halo-color": "#ffffff",
+                          "text-halo-width": 1.5,
                         }}
                       />
                     </Source>
@@ -505,9 +534,9 @@ export function SmsHubView() {
               )}
             </div>
             <div className="mt-4 flex flex-wrap gap-3 text-xs">
-              {Object.entries(statusConfig).map(([key, val]) => (
-                <div key={key} className="flex items-center gap-1.5">
-                  <div className={`h-3 w-3 rounded-full ${val.mapColor}`} />
+              {Object.entries(statusColorMap).map(([_, val]) => (
+                <div key={val.label} className="flex items-center gap-1.5">
+                  <div className="h-3 w-3 rounded" style={{ backgroundColor: val.color }} />
                   <span className="text-muted-foreground">{val.label}</span>
                 </div>
               ))}

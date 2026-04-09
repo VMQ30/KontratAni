@@ -1,86 +1,101 @@
 // DashboardView.tsx (Buyer)
 
-import { useAppStore } from '@/store/useAppStore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { FileText, Package, Wallet, TrendingUp, ChevronRight,
-  // ── NEW: verification state icons for contract list badges ─────────────────
-  ShieldAlert, Hourglass,
-  // ── END ────────────────────────────────────────────────────────────────────
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useAppStore } from "@/store/useAppStore";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import {
+  FileText,
+  Package,
+  Wallet,
+  TrendingUp,
+  ChevronRight,
+  ShieldAlert,
+  Hourglass,
+} from "lucide-react";
+import { motion } from "framer-motion";
 
 const statusColors: Record<string, string> = {
-  open: 'bg-sand text-sand-foreground',
-  matched: 'bg-accent text-accent-foreground',
-  accepted: 'bg-primary/10 text-primary',
-  funded: 'bg-primary text-primary-foreground',
-  in_progress: 'bg-terracotta/10 text-terracotta',
-  completed: 'bg-primary text-primary-foreground',
+  open: "bg-sand text-sand-foreground",
+  matched: "bg-accent text-accent-foreground",
+  accepted: "bg-primary/10 text-primary",
+  funded: "bg-primary text-primary-foreground",
+  in_progress: "bg-terracotta/10 text-terracotta",
+  completed: "bg-primary text-primary-foreground",
 };
-
-// ── MODIFIED: added labels for pending_verification and disputed states ────────
-// previous: only had labels for the 7 CropStatus values (pending → delivered).
-// Without these, contracts in a pending_verification or disputed state would
-// display the raw key string (e.g. "pending_verification") in the dashboard list.
 const cropStatusLabels: Record<string, string> = {
-  pending:              'Pending',
-  seeds_planted:        'Seeds Planted',
-  fertilized:           'Fertilized',
-  growing:              'Growing',
-  ready_for_harvest:    'Ready for Harvest',
-  harvested:            'Harvested',
-  delivered:            'Delivered',
-  // ── NEW entries ─────────────────────────────────────────────────────────────
-  // These aren't CropStatus values but can appear as derived display states
-  // when we want to surface verification context in the dashboard label.
-  pending_verification: 'Awaiting Buyer Sign-off',
-  disputed:             'Disputed — Escrow Frozen',
-  // ── END ────────────────────────────────────────────────────────────────────
+  pending: "Pending",
+  seeds_planted: "Seeds Planted",
+  fertilized: "Fertilized",
+  growing: "Growing",
+  ready_for_harvest: "Ready for Harvest",
+  harvested: "Harvested",
+  delivered: "Delivered",
+  pending_verification: "Awaiting Buyer Sign-off",
+  disputed: "Disputed — Escrow Frozen",
 };
-// ── END ──────────────────────────────────────────────────────────────────────
 
 export function DashboardView() {
   const { contracts, setActiveView, selectContract } = useAppStore();
 
-  const activeContracts = contracts.filter((c) => c.status !== 'completed');
+  const activeContracts = contracts.filter((c) => c.status !== "completed");
   const totalVolume = contracts.reduce((sum, c) => sum + c.volumeKg, 0);
   const totalEscrow = contracts.reduce((sum, c) => sum + c.escrowAmount, 0);
-  const avgProgress = Math.round(contracts.reduce((s, c) => s + c.progress, 0) / contracts.length);
+  const avgProgress = Math.round(
+    contracts.reduce((s, c) => s + c.progress, 0) / contracts.length,
+  );
 
   const metrics = [
-    { label: 'Active Contracts', value: activeContracts.length, icon: FileText, color: 'text-primary' },
-    { label: 'Total Volume', value: `${(totalVolume / 1000).toFixed(1)}t`, icon: Package, color: 'text-forest' },
-    { label: 'Funds in Escrow', value: `₱${(totalEscrow / 1000).toFixed(0)}k`, icon: Wallet, color: 'text-terracotta' },
-    { label: 'Avg. Progress', value: `${avgProgress}%`, icon: TrendingUp, color: 'text-primary' },
+    {
+      label: "Active Contracts",
+      value: activeContracts.length,
+      icon: FileText,
+      color: "text-primary",
+    },
+    {
+      label: "Total Volume",
+      value: `${(totalVolume / 1000).toFixed(1)}t`,
+      icon: Package,
+      color: "text-forest",
+    },
+    {
+      label: "Funds in Escrow",
+      value: `₱${(totalEscrow / 1000).toFixed(0)}k`,
+      icon: Wallet,
+      color: "text-terracotta",
+    },
+    {
+      label: "Avg. Progress",
+      value: `${avgProgress}%`,
+      icon: TrendingUp,
+      color: "text-primary",
+    },
   ];
-
-  // ── NEW: helper — derive the best display label for a contract's crop status,
-  // taking verification state into account so the dashboard accurately reflects
-  // whether a reported milestone is verified or pending sign-off.
-  function getCropStatusLabel(contract: typeof contracts[0]): string {
-    // Dispute overrides everything
+  function getCropStatusLabel(contract: (typeof contracts)[0]): string {
     if (contract.disputeFlag) {
-      return cropStatusLabels['disputed'];
+      return cropStatusLabels["disputed"];
     }
-    // If the latest evidence for the current cropStatus is pending, say so
     const latestEvidence = contract.milestoneEvidence?.find(
-      e => e.cropStatus === contract.cropStatus
+      (e) => e.cropStatus === contract.cropStatus,
     );
-    if (latestEvidence?.verificationStatus === 'pending_verification') {
-      return cropStatusLabels['pending_verification'];
+    if (latestEvidence?.verificationStatus === "pending_verification") {
+      return cropStatusLabels["pending_verification"];
     }
-    // Otherwise use the standard label, falling back to the raw key
-    return cropStatusLabels[contract.cropStatus] ?? contract.cropStatus.replace(/_/g, ' ');
+    return (
+      cropStatusLabels[contract.cropStatus] ??
+      contract.cropStatus.replace(/_/g, " ")
+    );
   }
-  // ── END ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="font-display text-2xl font-bold text-foreground">Procurement Dashboard</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Your command center for contract farming operations</p>
+        <h2 className="font-display text-2xl font-bold text-foreground">
+          Procurement Dashboard
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Your command center for contract farming operations
+        </p>
       </div>
 
       {/* Metric Cards — unchanged */}
@@ -88,15 +103,24 @@ export function DashboardView() {
         {metrics.map((m, i) => {
           const Icon = m.icon;
           return (
-            <motion.div key={m.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+            <motion.div
+              key={m.label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+            >
               <Card className="border-border/60">
                 <CardContent className="flex items-center gap-4 p-5">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-accent">
                     <Icon className={`h-5 w-5 ${m.color}`} />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground">{m.label}</p>
-                    <p className="font-display text-2xl font-bold text-foreground">{m.value}</p>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {m.label}
+                    </p>
+                    <p className="font-display text-2xl font-bold text-foreground">
+                      {m.value}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -109,32 +133,43 @@ export function DashboardView() {
           Buyers land on the dashboard first; these prompt them to take action
           without having to drill into individual contracts.
       ── END ── */}
-      {contracts.some(c => c.disputeFlag) && (
-        <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
+      {contracts.some((c) => c.disputeFlag) && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <button
-            onClick={() => setActiveView('contracts')}
+            onClick={() => setActiveView("contracts")}
             className="flex w-full items-center gap-3 rounded-lg border-2 border-red-300 bg-red-50 px-4 py-3 text-left hover:bg-red-100 transition-colors"
           >
             <ShieldAlert className="h-4 w-4 shrink-0 text-red-600" />
             <p className="flex-1 text-sm font-medium text-red-800">
-              {contracts.filter(c => c.disputeFlag).length} contract(s) have active disputes — escrow is frozen.
-              View in My Contracts.
+              {contracts.filter((c) => c.disputeFlag).length} contract(s) have
+              active disputes — escrow is frozen. View in My Contracts.
             </p>
             <ChevronRight className="h-4 w-4 text-red-400" />
           </button>
         </motion.div>
       )}
 
-      {contracts.some(c => c.pendingBuyerConfirmation && !c.disputeFlag) && (
-        <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
+      {contracts.some((c) => c.pendingBuyerConfirmation && !c.disputeFlag) && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <button
-            onClick={() => setActiveView('contracts')}
+            onClick={() => setActiveView("contracts")}
             className="flex w-full items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left hover:bg-amber-100 transition-colors"
           >
             <Hourglass className="h-4 w-4 shrink-0 text-amber-600" />
             <p className="flex-1 text-sm font-medium text-amber-800">
-              {contracts.filter(c => c.pendingBuyerConfirmation && !c.disputeFlag).length} delivery confirmation(s) awaiting your sign-off.
-              Farmers are waiting for payout.
+              {
+                contracts.filter(
+                  (c) => c.pendingBuyerConfirmation && !c.disputeFlag,
+                ).length
+              }{" "}
+              delivery confirmation(s) awaiting your sign-off. Farmers are
+              waiting for payout.
             </p>
             <ChevronRight className="h-4 w-4 text-amber-400" />
           </button>
@@ -147,7 +182,7 @@ export function DashboardView() {
         <CardHeader className="flex flex-row items-center justify-between pb-4">
           <CardTitle className="text-lg">Active Contracts</CardTitle>
           <button
-            onClick={() => setActiveView('demand')}
+            onClick={() => setActiveView("demand")}
             className="text-sm font-medium text-terracotta hover:underline"
           >
             + New Demand
@@ -164,15 +199,20 @@ export function DashboardView() {
               <button
                 onClick={() => {
                   selectContract(contract.id);
-                  setActiveView('contracts');
+                  setActiveView("contracts");
                 }}
                 className="group flex w-full items-center gap-4 rounded-lg border border-border/50 p-4 text-left transition-colors duration-150 hover:border-primary/30 hover:bg-accent/50"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-display text-sm font-semibold text-foreground">{contract.crop}</p>
-                    <Badge variant="secondary" className={statusColors[contract.status]}>
-                      {contract.status.replace('_', ' ')}
+                    <p className="font-display text-sm font-semibold text-foreground">
+                      {contract.crop}
+                    </p>
+                    <Badge
+                      variant="secondary"
+                      className={statusColors[contract.status]}
+                    >
+                      {contract.status.replace("_", " ")}
                     </Badge>
                     {/* ── NEW: surface dispute / pending badges in the contract row ─── */}
                     {contract.disputeFlag && (
@@ -180,33 +220,44 @@ export function DashboardView() {
                         <ShieldAlert className="mr-1 h-3 w-3" /> Frozen
                       </Badge>
                     )}
-                    {!contract.disputeFlag && contract.pendingBuyerConfirmation && (
-                      <Badge className="border-amber-200 bg-amber-50 text-amber-700 text-[10px]">
-                        <Hourglass className="mr-1 h-3 w-3" /> Action Needed
-                      </Badge>
-                    )}
+                    {!contract.disputeFlag &&
+                      contract.pendingBuyerConfirmation && (
+                        <Badge className="border-amber-200 bg-amber-50 text-amber-700 text-[10px]">
+                          <Hourglass className="mr-1 h-3 w-3" /> Action Needed
+                        </Badge>
+                      )}
                     {/* ── END ────────────────────────────────────────────────────── */}
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {contract.volumeKg.toLocaleString()} kg · Target: {contract.targetDate}
-                    {contract.matchedCooperative && ` · ${contract.matchedCooperative.name}`}
+                    {contract.volumeKg.toLocaleString()} kg · Target:{" "}
+                    {contract.targetDate}
+                    {contract.matchedCooperative &&
+                      ` · ${contract.matchedCooperative.name}`}
                   </p>
                   <div className="mt-2 flex items-center gap-3">
-                    <Progress value={contract.progress} className="h-2 flex-1" />
-                    <span className="text-xs font-medium text-muted-foreground">{contract.progress}%</span>
+                    <Progress
+                      value={contract.progress}
+                      className="h-2 flex-1"
+                    />
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {contract.progress}%
+                    </span>
                   </div>
                   {/* ── MODIFIED: uses getCropStatusLabel instead of cropStatusLabels[x] ─
                       previous: <p className="mt-1 text-xs text-muted-foreground">{cropStatusLabels[contract.cropStatus]}</p>
                       Reason: plain lookup would show undefined for verification states;
                       getCropStatusLabel handles disputed and pending_verification gracefully.
                   ── END ── */}
-                  <p className={`mt-1 text-xs font-medium ${
-                    contract.disputeFlag
-                      ? 'text-red-600'
-                      : contract.pendingBuyerConfirmation && !contract.buyerConfirmedDelivery
-                      ? 'text-amber-600'
-                      : 'text-muted-foreground'
-                  }`}>
+                  <p
+                    className={`mt-1 text-xs font-medium ${
+                      contract.disputeFlag
+                        ? "text-red-600"
+                        : contract.pendingBuyerConfirmation &&
+                            !contract.buyerConfirmedDelivery
+                          ? "text-amber-600"
+                          : "text-muted-foreground"
+                    }`}
+                  >
                     {getCropStatusLabel(contract)}
                   </p>
                   {/* ── END ────────────────────────────────────────────────────── */}

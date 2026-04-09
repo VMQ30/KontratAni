@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FarmerSidebar } from "@/components/farmer/FarmerSidebar";
+import { FarmerMobileNav } from "@/components/farmer/FarmerMobileNav";
 import { ProfileView } from "@/components/farmer/ProfileView";
 import { ContractInboxView } from "@/components/manager/ContractInboxView";
 import { useAppStore } from "@/store/useAppStore";
@@ -9,10 +10,13 @@ import { AiChatbot } from "@/components/manager/AiChatbot";
 import { ContractAiAssistant } from "@/components/manager/ContractAiAssistant";
 import { DirectPayoutView } from "./DirectPayoutView";
 import { DemoControlPanel } from "@/components/DemoControlPanel.tsx";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function FarmerLayout() {
   const activeView = useAppStore((s) => s.activeView);
   const setActiveView = useAppStore((s) => s.setActiveView);
+  const isMobile = useIsMobile();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setActiveView("profile");
@@ -36,6 +40,26 @@ export function FarmerLayout() {
         return <ProfileView />;
     }
   };
+
+  const handleNavClick = () => {
+    setMobileMenuOpen(false);
+  };
+
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <FarmerMobileNav 
+          isOpen={mobileMenuOpen} 
+          onOpenChange={setMobileMenuOpen}
+          onNavClick={handleNavClick}
+        />
+        <main className="flex-1 overflow-y-auto pb-20 p-4">
+          {renderView()}
+        </main>
+        <AiChatbot />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
