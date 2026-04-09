@@ -359,8 +359,8 @@ const mockContracts: Contract[] = [
     volumeKg: 3000,
     targetDate: "2026-08-20",
     status: "in_progress",
-    cropStatus: "growing",
-    progress: 60,
+    cropStatus: "ready_for_harvest", 
+    progress: 60, 
     buyerName: "Metro Fresh Foods",
     matchedCooperative: mockCooperatives[1],
     escrowAmount: 90000,
@@ -382,7 +382,7 @@ const mockContracts: Contract[] = [
       },
       {
         cropStatus: "growing",
-        photoFileName: "growing_c2.jpg",
+        photoFileName: "", 
         submittedAt: "2026-03-18T10:00:00Z",
         verificationStatus: "verified",
         verifiedAt: "2026-03-18T15:00:00Z",
@@ -407,42 +407,42 @@ const mockContracts: Contract[] = [
     milestoneEvidence: [
       {
         cropStatus: "seeds_planted",
-        photoFileName: "seeds_c4_solo.jpg",
+        photoFileName: "",
         submittedAt: "2026-01-15T08:00:00Z",
         verificationStatus: "verified",
         verifiedAt: "2026-01-15T12:00:00Z",
       },
       {
         cropStatus: "fertilized",
-        photoFileName: "fert_c4_solo.jpg",
+        photoFileName: "",
         submittedAt: "2026-01-28T09:00:00Z",
         verificationStatus: "verified",
         verifiedAt: "2026-01-28T14:00:00Z",
       },
       {
         cropStatus: "growing",
-        photoFileName: "growing_c4_solo.jpg",
+        photoFileName: "",
         submittedAt: "2026-02-10T10:00:00Z",
         verificationStatus: "verified",
         verifiedAt: "2026-02-10T16:00:00Z",
       },
       {
         cropStatus: "ready_for_harvest",
-        photoFileName: "harvest_c4_solo.jpg",
+        photoFileName: "",
         submittedAt: "2026-02-22T07:00:00Z",
         verificationStatus: "verified",
         verifiedAt: "2026-02-22T11:00:00Z",
       },
       {
         cropStatus: "harvested",
-        photoFileName: "harvested_c4_solo.jpg",
+        photoFileName: "",
         submittedAt: "2026-03-05T08:00:00Z",
         verificationStatus: "verified",
         verifiedAt: "2026-03-05T13:00:00Z",
       },
       {
         cropStatus: "delivered",
-        photoFileName: "delivery_c4_solo.jpg",
+        photoFileName: "", // Farmer submitted without photo evidence
         submittedAt: "2026-03-19T06:00:00Z",
         verificationStatus: "pending_verification",
       },
@@ -651,7 +651,7 @@ const mockContracts: Contract[] = [
   },
 ];
 
-const VERIFIED_PROGRESS_MAP: Record<CropStatus, number> = {
+export const VERIFIED_PROGRESS_MAP: Record<CropStatus, number> = {
   pending: 0,
   seeds_planted: 25,
   fertilized: 40,
@@ -915,6 +915,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         return {
           ...c,
           cropStatus,
+          escrowAmount:
+            c.escrowAmount === 0 ? c.volumeKg * 30 : c.escrowAmount,
           pendingBuyerConfirmation:
             cropStatus === "delivered" ? true : c.pendingBuyerConfirmation,
           milestoneEvidence: updatedEvidence,
@@ -955,15 +957,30 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({
       contracts: s.contracts.map((c) => {
         if (c.id !== contractId) return c;
-        const updatedEvidence = c.milestoneEvidence.map((e) =>
-          e.cropStatus === cropStatus
-            ? {
-                ...e,
-                verificationStatus: "disputed" as MilestoneVerificationStatus,
-                disputeReason: reason,
-              }
-            : e,
+        const existingIdx = c.milestoneEvidence.findIndex(
+          (e) => e.cropStatus === cropStatus,
         );
+        const updatedEvidence =
+          existingIdx >= 0
+            ? c.milestoneEvidence.map((e) =>
+                e.cropStatus === cropStatus
+                  ? {
+                      ...e,
+                      verificationStatus: "disputed" as MilestoneVerificationStatus,
+                      disputeReason: reason,
+                    }
+                  : e,
+              )
+            : [
+                ...c.milestoneEvidence,
+                {
+                  cropStatus,
+                  photoFileName: "Dispute filed",
+                  submittedAt: new Date().toISOString(),
+                  verificationStatus: "disputed" as MilestoneVerificationStatus,
+                  disputeReason: reason,
+                },
+              ];
         return { ...c, disputeFlag: true, milestoneEvidence: updatedEvidence };
       }),
     }));
