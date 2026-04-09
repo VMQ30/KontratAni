@@ -247,6 +247,7 @@ export function PayoutView() {
                 </div>
               </CardContent>
             </Card>
+
             <Card>
               <CardContent className="p-5">
                 <div className="flex items-center gap-3">
@@ -262,6 +263,7 @@ export function PayoutView() {
                 </div>
               </CardContent>
             </Card>
+
             <Card>
               <CardContent className="p-5">
                 <div className="flex items-center gap-3">

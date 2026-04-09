@@ -14,6 +14,7 @@ type Step =
   | "support_detail"
   | "support_urgency"
   | "contract"
+  | "broadcast_response"
   | "done";
 
 interface Message {
@@ -23,8 +24,9 @@ interface Message {
   isBroadcast?: boolean;
 }
 
-const STORAGE_KEY = "kontratani_broadcast";
-const CROP_STATUS_KEY = "kontratani_crop_status";
+const STORAGE_KEY = 'kontratani_broadcast';
+const CROP_STATUS_KEY = 'kontratani_crop_status';
+const SMS_STATUS_KEY = 'kontratani_sms_status';
 
 // ─── Menus ────────────────────────────────────────────────────────────────────
 
@@ -162,7 +164,8 @@ export default function MobileView() {
   const contracts = useAppStore((s) => s.contracts);
   const updateCropStatus = useAppStore((s) => s.updateCropStatus);
   const updateFarmerSmsStatus = useAppStore((s) => s.updateFarmerSmsStatus);
-  const cooperatives = useAppStore((s) => s.cooperatives);
+  const updateUserSmsStatus   = useAppStore((s) => s.updateUserSmsStatus);
+  const cooperatives          = useAppStore((s) => s.cooperatives);
 
   const farmer = cooperatives
     .find((c) => c.id === COOP_ID)
@@ -195,10 +198,9 @@ export default function MobileView() {
     const perFarmer = matchedCooperative
       ? Math.floor(escrowAmount / (matchedCooperative.members.length || 1))
       : escrowAmount;
-    const formattedDate = new Date(targetDate).toLocaleDateString("en-PH", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+    void perFarmer;
+    const formattedDate = new Date(targetDate).toLocaleDateString('en-PH', {
+      year: 'numeric', month: 'long', day: 'numeric',
     });
     const statusLabels: Record<string, { en: string; tl: string }> = {
       matched: { en: "Matched", tl: "Nakatugma" },
@@ -250,10 +252,7 @@ export default function MobileView() {
     });
     const label = currentLabel[cropStatus]?.[lang] ?? cropStatus;
 
-    // Build only the next valid statuses (forward only)
-    const currentIdx = CROP_STATUS_ORDER.indexOf(
-      cropStatus as (typeof CROP_STATUS_ORDER)[number],
-    );
+    const currentIdx = CROP_STATUS_ORDER.indexOf(cropStatus as typeof CROP_STATUS_ORDER[number]);
     const nextStatuses = CROP_STATUS_ORDER.slice(currentIdx + 1);
     const nextLines = nextStatuses.map((s, i) => {
       const lbl = CROP_STATUS_LABELS[lang][CROP_STATUS_ORDER.indexOf(s)];
@@ -274,7 +273,6 @@ export default function MobileView() {
       : `Ang inyong kasalukuyang kontrata:\n\nPananim: ${crop}\nDami: ${volumeKg.toLocaleString()} kg\nTarget na petsa: ${formattedDate}\nKasalukuyang status: ${label}${updatePrompt}`;
   };
 
-  // Build the cropStatusMap dynamically based on current status (forward-only)
   const getForwardStatusMap = (): Record<number, CropStatus> => {
     if (!activeContract) return {};
     const currentIdx = CROP_STATUS_ORDER.indexOf(
@@ -287,13 +285,16 @@ export default function MobileView() {
   const [messages, setMessages] = useState<Message[]>([
     { id: 1, from: "PalAi", text: LANG_PROMPT },
   ]);
-  const [step, setStep] = useState<Step>("lang");
-  const [lang, setLang] = useState<Lang>("en");
-  const [complaintType, setComplaintType] = useState<number>(0);
-  const [supportType, setSupportType] = useState<number>(0);
-  const [input, setInput] = useState("");
-  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [step, setStep]                         = useState<Step>("lang");
+  const [lang, setLang]                         = useState<Lang>("en");
+  const [complaintType, setComplaintType]       = useState<number>(0);
+  const [supportType, setSupportType]           = useState<number>(0);
+  const [broadcastContractId, setBroadcastContractId] = useState<string | null>(null);
+  // Track the step that was active BEFORE a broadcast interrupted it
+  const [prebroadcastStep, setPrebroadcastStep] = useState<Step>("main");
+  const [input, setInput]                       = useState("");
+  const [seenIds, setSeenIds]                   = useState<Set<string>>(new Set());
+  const bottomRef                               = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
@@ -303,6 +304,7 @@ export default function MobileView() {
           id: string;
           text: string;
           time: string;
+          contractId?: string;
         };
         if (seenIds.has(payload.id)) return;
         setSeenIds((prev) => new Set([...prev, payload.id]));
@@ -315,12 +317,21 @@ export default function MobileView() {
             isBroadcast: true,
           },
         ]);
+        // ✅ KEY FIX: save current step, then move to broadcast_response
+        // so the farmer's next input is handled as accept/decline — not by
+        // whatever menu was previously active.
+        setPrebroadcastStep((prev) => prev); // capture via functional form below
+        setStep((current) => {
+          setPrebroadcastStep(current);
+          return "broadcast_response";
+        });
+        setBroadcastContractId(payload.contractId ?? activeContract?.id ?? null);
       } catch {}
     };
 
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, [seenIds]);
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [seenIds, activeContract]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -342,6 +353,90 @@ export default function MobileView() {
   };
 
   const process = (val: string) => {
+
+    // ── Broadcast accept / decline ───────────────────────────────────────────
+    if (step === "broadcast_response") {
+      if (val === "1") {
+        const cid = broadcastContractId ?? activeContract?.id;
+        if (cid) {
+          updateFarmerSmsStatus(cid, FARMER_ID, "planted");
+          // ✅ Also update the users array (farmer_01) so member ledger reflects it
+          updateUserSmsStatus(USER_ID, "planted");
+          localStorage.setItem(CROP_STATUS_KEY, JSON.stringify({
+            contractId: cid,
+            cropStatus: "seeds_planted",
+            ts: Date.now(),
+          }));
+          // ✅ Sync SMS status to farmer portal tab via localStorage
+          localStorage.setItem(SMS_STATUS_KEY, JSON.stringify({
+            contractId: cid,
+            farmerId: FARMER_ID,
+            userId: USER_ID,
+            smsStatus: "planted",
+            ts: Date.now(),
+          }));
+        }
+        addMsg(
+          lang === "en"
+            ? "✅ You have accepted the planting contract. Your coordinator has been notified. 🌾"
+            : "✅ Tinanggap ninyo ang kontrata sa pagtatanim. Naabisuhan na ang inyong coordinator. 🌾",
+          "kontratani"
+        );
+      } else if (val === "0") {
+        const cid = broadcastContractId ?? activeContract?.id;
+        if (cid) {
+          updateFarmerSmsStatus(cid, FARMER_ID, "declined" as FarmerSmsStatus);
+          // ✅ Also update the users array (farmer_01) so member ledger reflects it
+          updateUserSmsStatus(USER_ID, "declined");
+          // ✅ Sync SMS status to farmer portal tab via localStorage
+          localStorage.setItem(SMS_STATUS_KEY, JSON.stringify({
+            contractId: cid,
+            farmerId: FARMER_ID,
+            userId: USER_ID,
+            smsStatus: "declined",
+            ts: Date.now(),
+          }));
+        }
+        addMsg(
+          lang === "en"
+            ? "You have declined the contract. Your coordinator has been informed."
+            : "Tinangggi ninyo ang kontrata. Naabisuhan na ang inyong coordinator.",
+          "kontratani"
+        );
+      } else {
+        // Invalid — stay in broadcast_response and ask again
+        addMsg(INVALID[lang], "kontratani");
+        return;
+      }
+
+      // Return to whichever step was active before the broadcast
+      setBroadcastContractId(null);
+      const returnStep = prebroadcastStep === "broadcast_response" ? "main" : prebroadcastStep;
+      setStep(returnStep);
+      // Show the appropriate menu for the return step
+      setTimeout(() => {
+        if (returnStep === "lang") {
+          addMsg(LANG_PROMPT, "kontratani");
+        } else if (returnStep === "main") {
+          addMsg(MAIN_MENU[lang], "kontratani");
+        } else if (returnStep === "complaint") {
+          addMsg(COMPLAINT_MENU[lang], "kontratani");
+        } else if (returnStep === "support") {
+          addMsg(SUPPORT_MENU[lang], "kontratani");
+        } else if (returnStep === "contract") {
+          addMsg(CONTRACT_MENU[lang], "kontratani");
+        } else if (returnStep === "crop_info") {
+          addMsg(getCropInfoMsg(lang), "kontratani");
+        } else {
+          // For mid-flow steps (detail, urgency, etc.) just go back to main
+          setStep("main");
+          addMsg(MAIN_MENU[lang], "kontratani");
+        }
+      }, 700);
+      return;
+    }
+
+    // ── Language selection ───────────────────────────────────────────────────
     if (step === "lang") {
       if (val === "1") {
         setLang("en");
@@ -355,6 +450,7 @@ export default function MobileView() {
       return;
     }
 
+    // ── Main menu ────────────────────────────────────────────────────────────
     if (step === "main") {
       if (val === "1") {
         setStep("crop_info");
@@ -375,6 +471,7 @@ export default function MobileView() {
       return;
     }
 
+    // ── Crop info / status update ────────────────────────────────────────────
     if (step === "crop_info") {
       if (val === "0") {
         setStep("main");
@@ -401,15 +498,11 @@ export default function MobileView() {
           smsMap[newStatus] ?? "planted",
         );
 
-        // Write to localStorage so buyer portal tab syncs the crop status
-        localStorage.setItem(
-          CROP_STATUS_KEY,
-          JSON.stringify({
-            contractId: activeContract.id,
-            cropStatus: newStatus,
-            ts: Date.now(),
-          }),
-        );
+        localStorage.setItem(CROP_STATUS_KEY, JSON.stringify({
+          contractId: activeContract.id,
+          cropStatus: newStatus,
+          ts: Date.now(),
+        }));
 
         const labelMap = CROP_STATUS_LABELS[lang];
         const newLabel = labelMap[CROP_STATUS_ORDER.indexOf(newStatus)];
@@ -426,6 +519,7 @@ export default function MobileView() {
       return;
     }
 
+    // ── Support ──────────────────────────────────────────────────────────────
     if (step === "support") {
       if (val === "0") {
         setStep("main");
@@ -466,6 +560,7 @@ export default function MobileView() {
       return;
     }
 
+    // ── Contract ─────────────────────────────────────────────────────────────
     if (step === "contract") {
       if (val === "0") {
         setStep("main");
@@ -483,6 +578,7 @@ export default function MobileView() {
       return;
     }
 
+    // ── Complaint ────────────────────────────────────────────────────────────
     if (step === "complaint") {
       if (val === "0") {
         setStep("main");
@@ -523,6 +619,7 @@ export default function MobileView() {
       return;
     }
 
+    // ── Done ─────────────────────────────────────────────────────────────────
     if (step === "done") {
       addMsg(
         lang === "en"
@@ -533,7 +630,7 @@ export default function MobileView() {
     }
   };
 
-  // Suppress unused variable warnings for state setters used only via step flow
+  // Suppress unused variable warnings for state used only via step flow
   void complaintType;
   void supportType;
 

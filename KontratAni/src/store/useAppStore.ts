@@ -42,6 +42,35 @@ export interface MilestoneEvidence {
   disputeReason?: string;
 }
 
+// ── Types from useStore ───────────────────────────────────────────────────────
+export type Role = 'buyer' | 'coop_manager' | 'solo_farmer' | 'sub_farmer';
+export type EscrowStatus = 'unfunded' | 'locked' | 'released';
+export type PlotStatus = 'idle' | 'assigned' | 'planted' | 'harvested' | 'declined';
+
+export interface User {
+  id: string;
+  name: string;
+  role: Role;
+  walletBalance: number;
+  payoutMethod: 'Cash' | 'GCash' | 'Maya';
+  smsStatus?: 'pending' | 'notified' | 'planted' | 'declined';
+}
+
+export interface TimelineEvent {
+  timestamp: string;
+  event: string;
+}
+
+export interface FarmPlot {
+  id: string;
+  ownerId: string;
+  assignedFarmerId: string | null;
+  coordinates: [number, number];
+  status: PlotStatus;
+  currentContractId: string | null;
+}
+
+// ── Types from useAppStore ────────────────────────────────────────────────────
 export interface Farmer {
   id: string;
   name: string;
@@ -83,6 +112,7 @@ export interface SoloFarmer {
 }
 
 export interface Contract {
+  // useAppStore fields
   id: string;
   crop: string;
   volumeKg: number;
@@ -94,10 +124,6 @@ export interface Contract {
   matchedCooperative?: Cooperative;
   escrowAmount: number;
   createdAt: string;
-  milestoneEvidence: MilestoneEvidence[];
-  pendingBuyerConfirmation: boolean;
-  buyerConfirmedDelivery: boolean;
-  disputeFlag: boolean;
 }
 
 export interface DemandRequest {
@@ -112,12 +138,16 @@ export interface BroadcastMessage {
   time: string;
 }
 
+// ── Combined state ────────────────────────────────────────────────────────────
 interface AppState {
+  // ── useAppStore state ──────────────────────────────────────────────────────
   contracts: Contract[];
   cooperatives: Cooperative[];
   soloFarmers: SoloFarmer[];
   activeView: string;
   selectedContractId: string | null;
+
+  // Broadcast messages from manager to farmers
   broadcastMessages: BroadcastMessage[];
 
   addBroadcastMessage: (text: string) => void;
@@ -269,7 +299,7 @@ const mockSoloFarmers: SoloFarmer[] = [
   {
     id: "sf1",
     name: "Luzviminda Garcia",
-    hectares: 1.5,
+    hectares: 13.5,
     location: "Brgy. San Isidro",
     lat: 14.57,
     lng: 121.03,
@@ -345,51 +375,6 @@ const mockContracts: Contract[] = [
         submittedAt: "2026-03-18T10:00:00Z",
         verificationStatus: "verified",
         verifiedAt: "2026-03-18T15:00:00Z",
-      },
-    ],
-    pendingBuyerConfirmation: false,
-    buyerConfirmedDelivery: false,
-    disputeFlag: false,
-  },
-  {
-    id: "c3",
-    crop: "Mais (Corn)",
-    volumeKg: 8000,
-    targetDate: "2026-07-30",
-    status: "in_progress",
-    cropStatus: "ready_for_harvest",
-    progress: 60,
-    buyerName: "LGU Feeding Program",
-    matchedCooperative: mockCooperatives[2],
-    escrowAmount: 240000,
-    createdAt: "2026-01-15",
-    milestoneEvidence: [
-      {
-        cropStatus: "seeds_planted",
-        photoFileName: "seeds_c3.jpg",
-        submittedAt: "2026-01-25T08:00:00Z",
-        verificationStatus: "verified",
-        verifiedAt: "2026-01-25T13:00:00Z",
-      },
-      {
-        cropStatus: "fertilized",
-        photoFileName: "fert_c3.jpg",
-        submittedAt: "2026-02-10T09:00:00Z",
-        verificationStatus: "verified",
-        verifiedAt: "2026-02-10T15:00:00Z",
-      },
-      {
-        cropStatus: "growing",
-        photoFileName: "growing_c3.jpg",
-        submittedAt: "2026-02-25T10:00:00Z",
-        verificationStatus: "verified",
-        verifiedAt: "2026-02-25T16:00:00Z",
-      },
-      {
-        cropStatus: "ready_for_harvest",
-        photoFileName: "harvest_c3.jpg",
-        submittedAt: "2026-03-10T07:00:00Z",
-        verificationStatus: "pending_verification",
       },
     ],
     pendingBuyerConfirmation: false,
@@ -481,6 +466,27 @@ const mockContracts: Contract[] = [
         submittedAt: "2026-02-15T09:00:00Z",
         verificationStatus: "verified",
         verifiedAt: "2026-02-15T15:00:00Z",
+      },
+      {
+        cropStatus: "growing",
+        photoFileName: "growing_c6.jpg",
+        submittedAt: "2026-01-10T10:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-01-10T15:00:00Z",
+      },
+      {
+        cropStatus: "ready_for_harvest",
+        photoFileName: "harvest_c6.jpg",
+        submittedAt: "2026-02-01T07:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-02-01T11:00:00Z",
+      },
+      {
+        cropStatus: "harvested",
+        photoFileName: "harvested_c6.jpg",
+        submittedAt: "2026-02-15T08:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-02-15T13:00:00Z",
       },
       {
         cropStatus: "delivered",
@@ -631,24 +637,7 @@ const mockContracts: Contract[] = [
     pendingBuyerConfirmation: false,
     buyerConfirmedDelivery: false,
     disputeFlag: false,
-  },
-  {
-    id: "c9",
-    crop: "Rice (Sinandomeng)",
-    volumeKg: 200,
-    targetDate: "2026-04-10",
-    status: "matched",
-    cropStatus: "pending",
-    progress: 0,
-    buyerName: "LGU Community Kitchen",
-    matchedCooperative: mockCooperatives[0],
-    escrowAmount: 0,
-    createdAt: "2026-03-21",
-    milestoneEvidence: [],
-    pendingBuyerConfirmation: false,
-    buyerConfirmedDelivery: false,
-    disputeFlag: false,
-  },
+  }
 ];
 
 const VERIFIED_PROGRESS_MAP: Record<CropStatus, number> = {
@@ -662,6 +651,7 @@ const VERIFIED_PROGRESS_MAP: Record<CropStatus, number> = {
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
+  // ── useAppStore initial state ──────────────────────────────────────────────
   contracts: mockContracts,
   cooperatives: mockCooperatives,
   soloFarmers: mockSoloFarmers,
@@ -722,6 +712,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
+  // acceptContract: merged — updates both useAppStore status and useStore timeline
   acceptContract: (contractId) => {
     set((s) => ({
       contracts: s.contracts.map((c) =>
@@ -775,9 +766,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
+  // updateFarmerSmsStatus: merged — updates cooperative members (useAppStore) AND
+  // users / farmPlots / contract timeline (useStore)
   updateFarmerSmsStatus: (contractId, farmerId, status) => {
-    set((s) => ({
-      contracts: s.contracts.map((c) => {
+    set((s) => {
+      // 1. Update cooperative member smsStatus inside the matched contract (useAppStore)
+      const updatedContracts = s.contracts.map((c) => {
         if (c.id !== contractId || !c.matchedCooperative) return c;
         return {
           ...c,
@@ -788,8 +782,39 @@ export const useAppStore = create<AppState>((set, get) => ({
             ),
           },
         };
-      }),
-    }));
+      });
+
+      // 2. Update User smsStatus (useStore) — map FarmerSmsStatus → useStore smsStatus
+      const userStatus = (['pending', 'notified', 'planted', 'declined'] as const).includes(
+        status as any
+      )
+        ? (status as 'pending' | 'notified' | 'planted' | 'declined')
+        : undefined;
+
+      const updatedUsers = userStatus
+        ? s.users.map((u) => (u.id === farmerId ? { ...u, smsStatus: userStatus } : u))
+        : s.users;
+
+      // 3. Update farmPlot status (useStore)
+      // Cast to string first because FarmerSmsStatus doesn't include 'declined',
+      // but this function may be called from useStore paths that pass that value.
+      const statusStr = status as string;
+      const updatedPlots = s.farmPlots.map((p) =>
+        p.assignedFarmerId === farmerId
+          ? {
+              ...p,
+              status:
+                statusStr === 'declined'
+                  ? ('declined' as PlotStatus)
+                  : statusStr === 'planted' || statusStr === 'harvested'
+                  ? (statusStr as PlotStatus)
+                  : p.status,
+            }
+          : p
+      );
+
+      return { contracts: updatedContracts, users: updatedUsers, farmPlots: updatedPlots };
+    });
   },
 
   addCoopMember: (coopId, farmer) => {
