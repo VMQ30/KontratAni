@@ -23,7 +23,6 @@ export function ContractInboxView() {
   const acceptContract = useAppStore((s) => s.acceptContract);
   const setActiveView = useAppStore((s) => s.setActiveView);
   const selectContract = useAppStore((s) => s.selectContract);
-  const confirmedAllocations = useAppStore((s) => s.confirmedAllocations);
 
   const pendingContracts = contracts.filter(
     (c) => c.status === "matched" || c.status === "open",
@@ -32,8 +31,7 @@ export function ContractInboxView() {
     ["accepted", "funded", "in_progress"].includes(c.status),
   );
 
-  const handleAccept = (id: string, isAllocated) => {
-    console.log(isAllocated);
+  const handleAccept = (id: string) => {
     acceptContract(id);
     toast.success("Contract accepted!");
   };
@@ -92,8 +90,6 @@ export function ContractInboxView() {
             {pendingContracts.length})
           </h3>
           {pendingContracts.map((contract) => {
-            const isAllocated = confirmedAllocations.includes(contract.id);
-            console.log(isAllocated);
             return (
               <Card
                 key={contract.id}
@@ -158,7 +154,7 @@ export function ContractInboxView() {
                       <Button
                         size="sm"
                         className="gap-1"
-                        onClick={() => handleAccept(contract.id, isAllocated)}
+                        onClick={() => handleAccept(contract.id)}
                       >
                         <Check className="h-4 w-4" /> Accept
                       </Button>
