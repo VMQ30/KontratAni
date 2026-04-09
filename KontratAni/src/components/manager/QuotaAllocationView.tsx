@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,9 @@ import {
   RefreshCw,
   Lock,
   Send,
+  UserCheck,
+  UserX,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 const KG_PER_HA = 1000;
@@ -22,40 +25,91 @@ interface AllocationBreakdown {
   total: number;
 }
 
+const getStatusConfig = (status: string) => {
+  switch (status) {
+    case "confirmed":
+      return { label: "Approved", color: "bg-green-500/10 text-green-600 border-green-200", icon: <UserCheck className="h-3 w-3" /> };
+    case "declined":
+      return { label: "Declined", color: "bg-destructive/10 text-destructive border-destructive/20", icon: <UserX className="h-3 w-3" /> };
+    case "notified":
+    case "pending":
+    default:
+      return { label: "Waiting for reply", color: "bg-amber-500/10 text-amber-600 border-amber-200", icon: <Clock className="h-3 w-3" /> };
+  }
+}
+
 function distribute(
-  farmers: { id: string; hectares: number }[],
+  farmers: { id: string; hectares: number, smsStatus?: string }[],
   totalKg: number,
 ): Record<string, AllocationBreakdown> {
-  if (farmers.length === 0) return {};
+  const activeFarmers = farmers.filter(f => f.smsStatus === "confirmed");
+  if (activeFarmers.length === 0) return {};
+  
   const cap = (f: { hectares: number }) => Math.floor(f.hectares * KG_PER_HA);
   const result: Record<string, AllocationBreakdown> = {};
 
+  farmers.forEach(f => {
+    result[f.id] = { base: 0, bonus: 0, total: 0 };
+  });
+
   const basePool = Math.floor(totalKg * BASE_SPLIT);
-  const equalBase = Math.floor(basePool / farmers.length);
-  farmers.forEach((f) => {
+  const equalBase = Math.floor(basePool / activeFarmers.length);
+
+  activeFarmers.forEach((f) => {
     const base = Math.min(equalBase, cap(f));
     result[f.id] = { base, bonus: 0, total: base };
   });
 
-  let bonusPool = totalKg - farmers.reduce((s, f) => s + result[f.id].base, 0);
-  let iters = 20;
-  while (bonusPool >= 1 && iters-- > 0) {
-    const eligible = farmers.filter((f) => result[f.id].total < cap(f));
+  let bonusPool = totalKg - activeFarmers.reduce((s, f) => s + result[f.id].total, 0);
+
+  while (bonusPool > 0) {
+    const eligible = activeFarmers.filter(
+      f => result[f.id].total < cap(f)
+    );
     if (eligible.length === 0) break;
+
     const totalHa = eligible.reduce((s, f) => s + f.hectares, 0);
     if (totalHa === 0) break;
-    let used = 0,
-      overflow = 0;
-    eligible.forEach((f) => {
-      const want = Math.floor((f.hectares / totalHa) * bonusPool);
-      const room = cap(f) - result[f.id].total;
-      const actual = Math.min(want, room);
-      result[f.id].bonus += actual;
-      result[f.id].total += actual;
-      used += actual;
-      overflow += want - actual;
+
+    // Step 1: compute exact fractional shares
+    const shares = eligible.map(f => {
+      const exact = (f.hectares / totalHa) * bonusPool;
+      return {
+        farmer: f,
+        floor: Math.floor(exact),
+        remainder: exact - Math.floor(exact),
+      };
     });
-    bonusPool = bonusPool - used + overflow;
+
+    // Step 2: assign floor values
+    let used = 0;
+    shares.forEach(({ farmer, floor }) => {
+      const room = cap(farmer) - result[farmer.id].total;
+      const actual = Math.min(floor, room);
+
+      result[farmer.id].bonus += actual;
+      result[farmer.id].total += actual;
+      used += actual;
+    });
+
+    bonusPool -= used;
+
+    // Step 3: distribute remaining kg (the IMPORTANT part)
+    if (bonusPool > 0) {
+      // sort by highest remainder first
+      shares
+        .sort((a, b) => b.remainder - a.remainder)
+        .forEach(({ farmer }) => {
+          if (bonusPool <= 0) return;
+
+          const room = cap(farmer) - result[farmer.id].total;
+          if (room <= 0) return;
+
+          result[farmer.id].bonus += 1;
+          result[farmer.id].total += 1;
+          bonusPool -= 1;
+        });
+    }
   }
   return result;
 }
@@ -64,7 +118,7 @@ export function QuotaAllocationView() {
   const contracts = useAppStore((s) => s.contracts);
   const acceptedContracts = contracts.filter(
     (c) =>
-      ["accepted", "funded", "in_progress"].includes(c.status) &&
+      ["matched", "accepted", "funded", "in_progress"].includes(c.status) &&
       c.matchedCooperative,
   );
 
@@ -73,6 +127,7 @@ export function QuotaAllocationView() {
   );
   const contract = acceptedContracts.find((c) => c.id === selectedId);
   const farmers = contract?.matchedCooperative?.members || [];
+  const activeFarmers = farmers.filter(f => f.smsStatus === "confirmed");
 
   const [breakdowns, setBreakdowns] = useState<
     Record<string, AllocationBreakdown>
@@ -80,6 +135,14 @@ export function QuotaAllocationView() {
   const [inputText, setInputText] = useState<Record<string, string>>({});
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [isConfirmed, setIsConfirmed] = useState(false);
+
+  const farmerStatuses = farmers.map(f => f.smsStatus).join(",");
+  useEffect(() => {
+    if (contract) {
+      setBreakdowns(distribute(contract.matchedCooperative?.members || [], contract.volumeKg));
+      setIsConfirmed(false);
+    }
+  }, [contract?.id, farmerStatuses]);
 
   const targetKg = contract?.volumeKg || 0;
   const totalAllocated = Object.values(breakdowns).reduce(
@@ -93,17 +156,24 @@ export function QuotaAllocationView() {
   );
   const basePool = Math.floor(targetKg * BASE_SPLIT);
   const equalBase =
-    farmers.length > 0 ? Math.floor(basePool / farmers.length) : 0;
-  const totalHa = farmers.reduce((s, f) => s + f.hectares, 0);
+  activeFarmers.length > 0
+    ? Math.floor(basePool / activeFarmers.length)
+    : 0;
+  const totalHa = activeFarmers.reduce((s, f) => s + f.hectares, 0);
+
+  const activeCapacity = activeFarmers.reduce(
+    (s, f) => s + Math.floor(f.hectares * KG_PER_HA), 0
+  );
+  const isCapacityShortfall = activeCapacity < targetKg;
 
   const handleReset = useCallback(() => {
     if (!contract) return;
-    setBreakdowns(distribute(farmers, contract.volumeKg));
+    setBreakdowns(distribute(activeFarmers, contract.volumeKg));
     setInputText({});
     setFocusedId(null);
     setIsConfirmed(false);
     toast.success("Reset to fair distribution.");
-  }, [contract, farmers]);
+  }, [contract, activeFarmers]);
 
   const handleSelectContract = (id: string) => {
     setSelectedId(id);
@@ -116,19 +186,47 @@ export function QuotaAllocationView() {
   };
 
   const setTotal = (farmerId: string, value: number) => {
-    const farmer = farmers.find((f) => f.id === farmerId);
-    if (!farmer) return;
+    const farmer = farmers.find(f => f.id === farmerId);
+    if (!farmer || farmer.smsStatus !== "confirmed") return;
+
     const maxKg = Math.floor(farmer.hectares * KG_PER_HA);
     const base = breakdowns[farmerId]?.base ?? 0;
+
     const clamped = Math.max(base, Math.min(Math.round(value), maxKg));
-    setBreakdowns((prev) => ({
-      ...prev,
-      [farmerId]: {
-        base: prev[farmerId].base,
-        bonus: Math.max(0, clamped - prev[farmerId].base),
-        total: clamped,
-      },
-    }));
+
+    const locked: Record<string, number> = {
+      [farmerId]: clamped,
+    };
+
+    const otherFarmers = farmers.filter(
+      f => f.id !== farmerId && f.smsStatus === "confirmed"
+    );
+
+    const remainingKg = targetKg - clamped;
+
+    const redistributed = distribute(otherFarmers, remainingKg);
+
+    const newBreakdowns: Record<string, AllocationBreakdown> = {};
+
+    farmers.forEach(f => {
+      if (f.smsStatus !== "confirmed") {
+        newBreakdowns[f.id] = { base: 0, bonus: 0, total: 0 };
+      } else if (f.id === farmerId) {
+        newBreakdowns[f.id] = {
+          base,
+          bonus: clamped - base,
+          total: clamped,
+        };
+      } else {
+        newBreakdowns[f.id] = redistributed[f.id] || {
+          base: 0,
+          bonus: 0,
+          total: 0,
+        };
+      }
+    });
+
+    setBreakdowns(newBreakdowns);
     setIsConfirmed(false);
   };
 
@@ -270,7 +368,7 @@ export function QuotaAllocationView() {
                 </Badge>
               </div>
               <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                Divided equally among all {farmers.length} members. Same amount
+                Divided equally among all {activeFarmers.length} confirmed members. Same amount
                 for everyone — no one is left out.
               </p>
               <p className="mt-2 font-mono text-sm font-bold text-primary">
@@ -390,6 +488,11 @@ export function QuotaAllocationView() {
                   ? (inputText[farmer.id] ?? String(bd.total))
                   : String(bd.total);
 
+              const status = getStatusConfig(farmer.smsStatus || "pending");
+              const isNotConfirm = farmer.smsStatus !== "confirmed";
+
+              
+
               return (
                 <Card key={farmer.id} className="overflow-hidden">
                   <CardContent className="p-0">
@@ -411,6 +514,10 @@ export function QuotaAllocationView() {
                             className="text-xs capitalize"
                           >
                             {farmer.payoutMethod}
+                          </Badge>
+                          <Badge variant="outline" className={`text-[10px] gap-1 px-1.5 py-0 ${status.color}`}>
+                            {status.icon}
+                            {status.label}
                           </Badge>
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
@@ -437,7 +544,13 @@ export function QuotaAllocationView() {
                                 [farmer.id]: String(bd.total),
                               }));
                             }}
-                            onBlur={() => handleTextBlur(farmer.id)}
+                            onBlur={() => {
+                              const val = parseInt(inputText[farmer.id]);
+                              if (!isNaN(val)) {
+                                setTotal(farmer.id, val);
+                              }
+                              setFocusedId(null);
+                            }}
                             onKeyDown={(e) =>
                               e.key === "Enter" && handleTextBlur(farmer.id)
                             }
@@ -500,14 +613,31 @@ export function QuotaAllocationView() {
                             zIndex: 0,
                           }}
                         />
-                        <Slider
+                        {!isNotConfirm && (<Slider
+                          disabled={isNotConfirm}
                           value={[bd.total]}
                           onValueChange={(v) => handleSlider(farmer.id, v)}
                           min={bd.base}
                           max={maxKg}
                           step={1}
                           className="relative z-10"
-                        />
+                        />)}
+                        {isNotConfirm && (
+                          <>
+                          {farmer.smsStatus === "declined" && (
+                            <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/5 p-2 rounded">
+                              <AlertTriangle className="h-3 w-3" />
+                              Farmer declined. Quota redirected to confirmed members.
+                            </div>
+                          )}
+                          {(farmer.smsStatus === "pending" || farmer.smsStatus === "notified") && (
+                            <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-500/5 p-2 rounded">
+                              <Clock className="h-3 w-3" />
+                              Awaiting confirmation. Will be included once approved.
+                            </div>
+                          )}
+                          </>
+                        )}
                       </div>
                       <div className="mt-1.5 flex justify-between text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
@@ -545,6 +675,19 @@ export function QuotaAllocationView() {
               );
             })}
           </div>
+
+          {isCapacityShortfall && (
+            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-500/10 p-3 text-sm text-amber-700">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>
+                Active members can only produce{" "}
+                <strong>{activeCapacity.toLocaleString()} kg</strong> total (
+                {(targetKg - activeCapacity).toLocaleString()} kg short of target).
+                The quota cannot be fully distributed until more members join or
+                the contract volume is adjusted.
+              </span>
+            </div>
+          )}
 
           {/* Single status line — only shown when something needs attention */}
           {remaining !== 0 && (
@@ -585,7 +728,7 @@ export function QuotaAllocationView() {
               size="lg"
               variant={isConfirmed ? "outline" : "default"}
               onClick={handleConfirm}
-              disabled={remaining !== 0 || isConfirmed}
+              disabled={remaining !== 0  || isConfirmed}
             >
               <Check className="h-4 w-4" />
               {isConfirmed ? "Allocation Confirmed ✓" : "Confirm Allocation"}

@@ -25,6 +25,7 @@ export type FarmerSmsStatus =
   | "notified"
   | "confirmed"
   | "planted"
+  | "declined"
   | "harvested";
 
 export type MilestoneVerificationStatus =
@@ -167,7 +168,7 @@ const mockFarmers: Farmer[] = [
     lat: 14.58,
     lng: 121.0,
     soilType: "Loam",
-    smsStatus: "pending",
+    smsStatus: "confirmed",
     assignedKg: 0,
     payoutMethod: "gcash",
     paid: false,
@@ -193,7 +194,7 @@ const mockFarmers: Farmer[] = [
     lat: 14.56,
     lng: 120.98,
     soilType: "Sandy Loam",
-    smsStatus: "pending",
+    smsStatus: "declined",
     assignedKg: 0,
     payoutMethod: "cash",
     paid: false,
@@ -206,7 +207,7 @@ const mockFarmers: Farmer[] = [
     lat: 14.59,
     lng: 121.04,
     soilType: "Loam",
-    smsStatus: "pending",
+    smsStatus: "confirmed",
     assignedKg: 0,
     payoutMethod: "gcash",
     paid: false,
@@ -219,7 +220,7 @@ const mockFarmers: Farmer[] = [
     lat: 14.63,
     lng: 120.96,
     soilType: "Silt Loam",
-    smsStatus: "pending",
+    smsStatus: "confirmed",
     assignedKg: 0,
     payoutMethod: "cash",
     paid: false,
