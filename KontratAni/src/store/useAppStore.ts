@@ -124,6 +124,10 @@ export interface Contract {
   matchedCooperative?: Cooperative;
   escrowAmount: number;
   createdAt: string;
+  milestoneEvidence: MilestoneEvidence[];
+  pendingBuyerConfirmation: boolean;
+  buyerConfirmedDelivery: boolean;
+  disputeFlag: boolean;
 }
 
 export interface DemandRequest {
@@ -146,6 +150,9 @@ interface AppState {
   soloFarmers: SoloFarmer[];
   activeView: string;
   selectedContractId: string | null;
+  users: User[];
+
+  farmPlots: FarmPlot[];
 
   // Broadcast messages from manager to farmers
   broadcastMessages: BroadcastMessage[];
@@ -658,6 +665,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeView: "dashboard",
   selectedContractId: null,
   broadcastMessages: [],
+  users: [],
+  farmPlots: [],
 
   addBroadcastMessage: (text) => {
     const msg: BroadcastMessage = {
@@ -795,9 +804,6 @@ export const useAppStore = create<AppState>((set, get) => ({
         ? s.users.map((u) => (u.id === farmerId ? { ...u, smsStatus: userStatus } : u))
         : s.users;
 
-      // 3. Update farmPlot status (useStore)
-      // Cast to string first because FarmerSmsStatus doesn't include 'declined',
-      // but this function may be called from useStore paths that pass that value.
       const statusStr = status as string;
       const updatedPlots = s.farmPlots.map((p) =>
         p.assignedFarmerId === farmerId
