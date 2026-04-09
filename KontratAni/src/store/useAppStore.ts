@@ -467,6 +467,27 @@ const mockContracts: Contract[] = [
         verifiedAt: "2026-02-15T15:00:00Z",
       },
       {
+        cropStatus: "growing",
+        photoFileName: "growing_c6.jpg",
+        submittedAt: "2026-01-10T10:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-01-10T15:00:00Z",
+      },
+      {
+        cropStatus: "ready_for_harvest",
+        photoFileName: "harvest_c6.jpg",
+        submittedAt: "2026-02-01T07:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-02-01T11:00:00Z",
+      },
+      {
+        cropStatus: "harvested",
+        photoFileName: "harvested_c6.jpg",
+        submittedAt: "2026-02-15T08:00:00Z",
+        verificationStatus: "verified",
+        verifiedAt: "2026-02-15T13:00:00Z",
+      },
+      {
         cropStatus: "delivered",
         photoFileName: "delivery_c5.jpg",
         submittedAt: "2026-03-15T07:00:00Z",
