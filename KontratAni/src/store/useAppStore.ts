@@ -150,9 +150,8 @@ interface AppState {
   soloFarmers: SoloFarmer[];
   activeView: string;
   selectedContractId: string | null;
-  users: User[];
-
-  farmPlots: FarmPlot[];
+  users: User[]; // For syncing Farmer smsStatus with useStore users
+  farmPlots: FarmPlot[]; // For syncing Farmer smsStatus with useStore farmPlots  
 
   // Broadcast messages from manager to farmers
   broadcastMessages: BroadcastMessage[];
@@ -664,9 +663,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   soloFarmers: mockSoloFarmers,
   activeView: "dashboard",
   selectedContractId: null,
+  users: [], // Initialize as empty; will sync with useStore for smsStatus
   broadcastMessages: [],
-  users: [],
-  farmPlots: [],
+  farmPlots: [], // Initialize as empty; will sync with useStore for smsStatus
 
   addBroadcastMessage: (text) => {
     const msg: BroadcastMessage = {
