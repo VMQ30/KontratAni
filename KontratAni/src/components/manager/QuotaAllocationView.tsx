@@ -62,9 +62,11 @@ function distribute(
 
 export function QuotaAllocationView() {
   const contracts = useAppStore((s) => s.contracts);
+  const setActiveView = useAppStore((s) => s.setActiveView);
+  const confirmAllocation = useAppStore((s) => s.confirmAllocation);
   const acceptedContracts = contracts.filter(
     (c) =>
-      ["accepted", "funded", "in_progress"].includes(c.status) &&
+      ["matched", "accepted", "funded", "in_progress"].includes(c.status) &&
       c.matchedCooperative,
   );
 
@@ -179,9 +181,11 @@ export function QuotaAllocationView() {
       return;
     }
     setIsConfirmed(true);
+    confirmAllocation(contract!.id);
     toast.success(
       `Quota confirmed for ${contract?.crop}. Ready for SMS broadcast.`,
     );
+    setTimeout(() => setActiveView("inbox"), 500);
   };
 
   const handleBroadcast = () => {

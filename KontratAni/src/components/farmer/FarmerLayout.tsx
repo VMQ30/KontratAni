@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FarmerSidebar } from "@/components/farmer/FarmerSidebar";
 import { FarmerMobileNav } from "@/components/farmer/FarmerMobileNav";
 import { ProfileView } from "@/components/farmer/ProfileView";
-import { ContractInboxView } from "@/components/manager/ContractInboxView";
+import { ContractInboxView } from "@/components/farmer/ContractInboxView";
 import { useAppStore } from "@/store/useAppStore";
 import { ContractProgress } from "./ContractProgress";
 import { AiReportView } from "@/components/manager/AiReportView";
@@ -48,14 +48,12 @@ export function FarmerLayout() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <FarmerMobileNav 
-          isOpen={mobileMenuOpen} 
+        <FarmerMobileNav
+          isOpen={mobileMenuOpen}
           onOpenChange={setMobileMenuOpen}
           onNavClick={handleNavClick}
         />
-        <main className="flex-1 overflow-y-auto pb-20 p-4">
-          {renderView()}
-        </main>
+        <main className="flex-1 overflow-y-auto pb-20 p-4">{renderView()}</main>
         <AiChatbot />
       </div>
     );
