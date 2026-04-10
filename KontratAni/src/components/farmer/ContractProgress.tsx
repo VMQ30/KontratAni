@@ -10,9 +10,21 @@ import {
   MilestoneVerificationStatus,
 } from "@/store/useAppStore";
 import {
-  Sprout, Droplets, Sun, Scissors, Truck, CheckCircle2,
-  ChevronRight, Clock, AlertCircle,
-  Upload, ImagePlus, ShieldAlert, ShieldCheck, Hourglass, X,
+  Sprout,
+  Droplets,
+  Sun,
+  Scissors,
+  Truck,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  AlertCircle,
+  Upload,
+  ImagePlus,
+  ShieldAlert,
+  ShieldCheck,
+  Hourglass,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -29,24 +41,87 @@ interface MilestoneStep {
 }
 
 const MILESTONES: MilestoneStep[] = [
-  { status: "seeds_planted",     label: "Seeds Planted",     sublabel: "Binhi naitanim na",       icon: Sprout,       buttonLabel: "Submit: Seeds Planted",     color: "text-primary", bgColor: "bg-primary/10", borderColor: "border-primary/20" },
-  { status: "fertilized",        label: "Fertilized",        sublabel: "Pataba nailagay na",      icon: Droplets,     buttonLabel: "Submit: Fertilized",        color: "text-primary", bgColor: "bg-primary/10", borderColor: "border-primary/20" },
-  { status: "growing",           label: "Growing",           sublabel: "Lumalaki na ang tanim",   icon: Sun,          buttonLabel: "Submit: Growing",           color: "text-primary", bgColor: "bg-primary/10", borderColor: "border-primary/20" },
-  { status: "ready_for_harvest", label: "Ready for Harvest", sublabel: "Handa na sa ani",         icon: Scissors,     buttonLabel: "Submit: Ready for Harvest", color: "text-primary", bgColor: "bg-primary/10", borderColor: "border-primary/20" },
-  { status: "harvested",         label: "Harvested",         sublabel: "Na-ani na",               icon: CheckCircle2, buttonLabel: "Submit: Harvested",         color: "text-primary", bgColor: "bg-primary/10", borderColor: "border-primary/20" },
-  { status: "delivered",         label: "Delivered",         sublabel: "Naihatid na sa buyer",    icon: Truck,        buttonLabel: "Submit: Delivered",         color: "text-primary", bgColor: "bg-primary/10", borderColor: "border-primary/20" },
+  {
+    status: "seeds_planted",
+    label: "Seeds Planted",
+    sublabel: "Binhi naitanim na",
+    icon: Sprout,
+    buttonLabel: "Submit: Seeds Planted",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+    borderColor: "border-primary/20",
+  },
+  {
+    status: "fertilized",
+    label: "Fertilized",
+    sublabel: "Pataba nailagay na",
+    icon: Droplets,
+    buttonLabel: "Submit: Fertilized",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+    borderColor: "border-primary/20",
+  },
+  {
+    status: "growing",
+    label: "Growing",
+    sublabel: "Lumalaki na ang tanim",
+    icon: Sun,
+    buttonLabel: "Submit: Growing",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+    borderColor: "border-primary/20",
+  },
+  {
+    status: "ready_for_harvest",
+    label: "Ready for Harvest",
+    sublabel: "Handa na sa ani",
+    icon: Scissors,
+    buttonLabel: "Submit: Ready for Harvest",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+    borderColor: "border-primary/20",
+  },
+  {
+    status: "harvested",
+    label: "Harvested",
+    sublabel: "Na-ani na",
+    icon: CheckCircle2,
+    buttonLabel: "Submit: Harvested",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+    borderColor: "border-primary/20",
+  },
+  {
+    status: "delivered",
+    label: "Delivered",
+    sublabel: "Naihatid na sa buyer",
+    icon: Truck,
+    buttonLabel: "Submit: Delivered",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+    borderColor: "border-primary/20",
+  },
 ];
 
 const STATUS_ORDER: CropStatus[] = [
-  "pending", "seeds_planted", "fertilized", "growing",
-  "ready_for_harvest", "harvested", "delivered",
+  "pending",
+  "seeds_planted",
+  "fertilized",
+  "growing",
+  "ready_for_harvest",
+  "harvested",
+  "delivered",
 ];
 
 function getStepIndex(status: CropStatus): number {
   return STATUS_ORDER.indexOf(status);
 }
 
-function VerificationBadge({ status }: { status: MilestoneVerificationStatus }) {
+function VerificationBadge({
+  status,
+}: {
+  status: MilestoneVerificationStatus;
+}) {
   if (status === "verified") {
     return (
       <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary border border-primary/20">
@@ -91,7 +166,10 @@ function PhotoUpload({
       <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-primary">
         <ImagePlus className="h-4 w-4 shrink-0" />
         <span className="flex-1 truncate font-medium">{fileName}</span>
-        <button onClick={onClear} className="ml-1 shrink-0 rounded p-0.5 hover:bg-primary/20">
+        <button
+          onClick={onClear}
+          className="ml-1 shrink-0 rounded p-0.5 hover:bg-primary/20"
+        >
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -107,12 +185,19 @@ function PhotoUpload({
       <Upload className="h-4 w-4 shrink-0" />
       <span>
         Attach photo evidence{" "}
-        {required
-          ? <span className="text-red-500">*</span>
-          : <span className="text-muted-foreground/60">(optional)</span>
-        }
+        {required ? (
+          <span className="text-red-500">*</span>
+        ) : (
+          <span className="text-muted-foreground/60">(optional)</span>
+        )}
       </span>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleChange} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleChange}
+      />
     </button>
   );
 }
@@ -136,7 +221,9 @@ function DisputeModal({
           </div>
           <div>
             <h3 className="font-semibold text-foreground">Raise a Dispute</h3>
-            <p className="text-xs text-muted-foreground">This will freeze escrow and flag for admin review.</p>
+            <p className="text-xs text-muted-foreground">
+              This will freeze escrow and flag for admin review.
+            </p>
           </div>
         </div>
         <textarea
@@ -202,29 +289,51 @@ function TimelineStep({
   };
 
   const spineColor =
-    state === "verified" ? "bg-primary/40"
-    : state === "disputed" ? "bg-red-200"
-    : "bg-border";
+    state === "verified"
+      ? "bg-primary/40"
+      : state === "disputed"
+        ? "bg-red-200"
+        : "bg-border";
 
   const nodeStyle =
-    state === "verified" ? "border-primary bg-primary text-primary-foreground"
-    : state === "pending"  ? "border-amber-400 bg-amber-50 text-amber-600"
-    : state === "disputed" ? "border-red-400 bg-red-50 text-red-600"
-    : state === "next"     ? cn(step.bgColor, step.borderColor, step.color)
-    : "border-border bg-muted text-muted-foreground/40";
+    state === "verified"
+      ? "border-primary bg-primary text-primary-foreground"
+      : state === "pending"
+        ? "border-amber-400 bg-amber-50 text-amber-600"
+        : state === "disputed"
+          ? "border-red-400 bg-red-50 text-red-600"
+          : state === "next"
+            ? cn(step.bgColor, step.borderColor, step.color)
+            : "border-border bg-muted text-muted-foreground/40";
 
   return (
     <div className="flex gap-4">
       {/* Spine */}
       <div className="flex flex-col items-center">
-        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300", nodeStyle)}>
-          {state === "verified" ? <CheckCircle2 className="h-5 w-5" />
-          : state === "pending"  ? <Hourglass className="h-5 w-5" />
-          : state === "disputed" ? <ShieldAlert className="h-5 w-5" />
-          : <Icon className="h-5 w-5" />}
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300",
+            nodeStyle,
+          )}
+        >
+          {state === "verified" ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : state === "pending" ? (
+            <Hourglass className="h-5 w-5" />
+          ) : state === "disputed" ? (
+            <ShieldAlert className="h-5 w-5" />
+          ) : (
+            <Icon className="h-5 w-5" />
+          )}
         </div>
         {!isLast && (
-          <div className={cn("mt-1 w-0.5 flex-1 transition-colors duration-300", spineColor)} style={{ minHeight: 32 }} />
+          <div
+            className={cn(
+              "mt-1 w-0.5 flex-1 transition-colors duration-300",
+              spineColor,
+            )}
+            style={{ minHeight: 32 }}
+          />
         )}
       </div>
 
@@ -232,22 +341,35 @@ function TimelineStep({
       <div className="flex-1 pb-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className={cn("font-semibold", state === "locked" ? "text-muted-foreground/50" : "text-foreground")}>
+            <p
+              className={cn(
+                "font-semibold",
+                state === "locked"
+                  ? "text-muted-foreground/50"
+                  : "text-foreground",
+              )}
+            >
               {step.label}
             </p>
             <p className="text-sm text-muted-foreground">{step.sublabel}</p>
           </div>
 
           <div className="flex items-center gap-2">
-            {(state === "verified" || state === "pending" || state === "disputed") && (
-              <VerificationBadge status={
-                state === "verified" ? "verified"
-                : state === "disputed" ? "disputed"
-                : "pending_verification"
-              } />
+            {(state === "verified" ||
+              state === "pending" ||
+              state === "disputed") && (
+              <VerificationBadge
+                status={
+                  state === "verified"
+                    ? "verified"
+                    : state === "disputed"
+                      ? "disputed"
+                      : "pending_verification"
+                }
+              />
             )}
-
-            {state === "pending" && (
+            
+            {(state === "pending" || state === "next") && (
               <button
                 onClick={onDispute}
                 className="flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
@@ -261,7 +383,9 @@ function TimelineStep({
                 onClick={() => setExpanded(true)}
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 rounded-lg border-2 px-4 py-2 text-sm font-semibold transition-all active:scale-95 hover:shadow-sm",
-                  step.bgColor, step.borderColor, step.color,
+                  step.bgColor,
+                  step.borderColor,
+                  step.color,
                 )}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -272,13 +396,28 @@ function TimelineStep({
         </div>
 
         {evidence && state !== "next" && (
-          <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-            <ImagePlus className="h-3.5 w-3.5" />
-            <span className="font-mono">{evidence.photoFileName}</span>
-            {evidence.verifiedAt && (
-              <span className="ml-1 text-primary">
-                · verified {new Date(evidence.verifiedAt).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}
-              </span>
+          <div className="mt-2 space-y-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <ImagePlus className="h-3.5 w-3.5" />
+              <span className="font-mono">{evidence.photoFileName}</span>
+              {evidence.verifiedAt && (
+                <span className="ml-1 text-primary">
+                  · verified{" "}
+                  {new Date(evidence.verifiedAt).toLocaleDateString("en-PH", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              )}
+            </div>
+
+            {evidence.disputeReason && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                <p className="font-medium">Dispute reason</p>
+                <p className="mt-1 whitespace-pre-wrap leading-snug">
+                  {evidence.disputeReason}
+                </p>
+              </div>
             )}
           </div>
         )}
@@ -286,13 +425,13 @@ function TimelineStep({
         {state === "next" && expanded && (
           <div className="mt-3 rounded-xl border border-border bg-muted/30 p-4 space-y-3">
             <p className="text-sm font-medium text-foreground">
-              Submit evidence for <span className={step.color}>{step.label}</span>
+              Submit evidence for{" "}
+              <span className={step.color}>{step.label}</span>
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               {isDelivered
                 ? "A delivery photo is required. Your submission will be sent to the buyer for co-confirmation before escrow is released."
-                : "Your submission will be sent to the buyer for co-confirmation before this milestone is marked complete. Escrow remains locked until they approve."
-              }
+                : "Your submission will be sent to the buyer for co-confirmation before this milestone is marked complete. Escrow remains locked until they approve."}
             </p>
             <PhotoUpload
               onFileSelected={setPhotoFile}
@@ -306,13 +445,18 @@ function TimelineStep({
                 disabled={submitting || (isDelivered && !photoFile)}
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
               >
-                {submitting
-                  ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground" />
-                  : <Upload className="h-4 w-4" />}
+                {submitting ? (
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
                 {submitting ? "Submitting…" : "Submit for Verification"}
               </button>
               <button
-                onClick={() => { setExpanded(false); setPhotoFile(null); }}
+                onClick={() => {
+                  setExpanded(false);
+                  setPhotoFile(null);
+                }}
                 className="rounded-lg border border-border px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted"
               >
                 Cancel
@@ -332,15 +476,20 @@ function DisputeFrozenBanner({ contractId }: { contractId: string }) {
       <div className="flex items-start gap-3">
         <ShieldAlert className="mt-0.5 h-6 w-6 shrink-0 text-red-600" />
         <div className="flex-1">
-          <p className="font-semibold text-red-800">Escrow Frozen — Dispute Active</p>
+          <p className="font-semibold text-red-800">
+            Escrow Frozen — Dispute Active
+          </p>
           <p className="mt-1 text-sm text-red-700">
-            A dispute has been flagged. Escrow funds are frozen and this case has
-            been escalated to PalAI admin. No payouts will be processed until resolved.
+            A dispute has been flagged. Escrow funds are frozen and this case
+            has been escalated to PalAI admin. No payouts will be processed
+            until resolved.
           </p>
           <button
             onClick={() => {
               resolveDispute(contractId);
-              toast.info("Dispute resolved by admin. Milestone returned to pending review.");
+              toast.info(
+                "Dispute resolved by admin. Milestone returned to pending review.",
+              );
             }}
             className="mt-3 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
           >
@@ -358,7 +507,9 @@ function PendingBuyerConfirmationBanner() {
       <div className="flex items-start gap-3">
         <Hourglass className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
         <div>
-          <p className="font-semibold text-amber-800">Awaiting Buyer Delivery Confirmation</p>
+          <p className="font-semibold text-amber-800">
+            Awaiting Buyer Delivery Confirmation
+          </p>
           <p className="mt-0.5 text-sm text-amber-700">
             You've submitted proof of delivery. The buyer must confirm receipt
             before escrow is released. This typically takes 1–2 business days.
@@ -369,20 +520,37 @@ function PendingBuyerConfirmationBanner() {
   );
 }
 
-function ContractSelector({ contracts, selectedId, onSelect }: { contracts: Contract[]; selectedId: string | null; onSelect: (id: string) => void; }) {
+function ContractSelector({
+  contracts,
+  selectedId,
+  onSelect,
+}: {
+  contracts: Contract[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}) {
   if (contracts.length === 0) return null;
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-muted-foreground">Select Contract</p>
+      <p className="text-sm font-medium text-muted-foreground">
+        Select Contract
+      </p>
       <div className="flex flex-wrap gap-2">
         {contracts.map((c) => (
-          <button key={c.id} onClick={() => onSelect(c.id)}
-            className={cn("rounded-lg border px-4 py-2 text-sm font-medium transition-all",
+          <button
+            key={c.id}
+            onClick={() => onSelect(c.id)}
+            className={cn(
+              "rounded-lg border px-4 py-2 text-sm font-medium transition-all",
               selectedId === c.id
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border bg-background text-foreground hover:border-primary/50 hover:bg-accent",
-            )}>
-            {c.crop} <span className="opacity-60">· {c.volumeKg.toLocaleString()} kg</span>
+            )}
+          >
+            {c.crop}{" "}
+            <span className="opacity-60">
+              · {c.volumeKg.toLocaleString()} kg
+            </span>
           </button>
         ))}
       </div>
@@ -398,10 +566,14 @@ function ProgressBar({ progress }: { progress: number }) {
         <span className="font-semibold text-foreground">{progress}%</span>
       </div>
       <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary transition-all duration-700 ease-out" style={{ width: `${progress}%` }} />
+        <div
+          className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
+          style={{ width: `${progress}%` }}
+        />
       </div>
       <p className="text-xs text-muted-foreground">
-        Progress only advances after each milestone is co-confirmed by the buyer.
+        Progress only advances after each milestone is co-confirmed by the
+        buyer.
       </p>
     </div>
   );
@@ -416,19 +588,24 @@ export function ContractProgress() {
     ["accepted", "funded", "in_progress"].includes(c.status),
   );
 
-  const [selectedId, setSelectedId] = useState<string | null>(activeContracts[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    activeContracts[0]?.id ?? null,
+  );
   const [disputingStep, setDisputingStep] = useState<CropStatus | null>(null);
-  
+
   const selectedContract = contracts.find((c) => c.id === selectedId) ?? null;
 
   const getEvidence = (status: CropStatus) =>
     selectedContract?.milestoneEvidence.find((e) => e.cropStatus === status);
 
-  const getStepState = (step: MilestoneStep): "verified" | "pending" | "disputed" | "next" | "locked" => {
+  const getStepState = (
+    step: MilestoneStep,
+  ): "verified" | "pending" | "disputed" | "next" | "locked" => {
     const evidence = getEvidence(step.status);
-    if (evidence?.verificationStatus === "verified")             return "verified";
-    if (evidence?.verificationStatus === "disputed")             return "disputed";
-    if (evidence?.verificationStatus === "pending_verification") return "pending";
+    if (evidence?.verificationStatus === "verified") return "verified";
+    if (evidence?.verificationStatus === "disputed") return "disputed";
+    if (evidence?.verificationStatus === "pending_verification")
+      return "pending";
 
     const stepOrderIndex = STATUS_ORDER.indexOf(step.status);
     const lastVerifiedIdx = (() => {
@@ -468,16 +645,23 @@ export function ContractProgress() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="font-display text-2xl font-bold text-foreground">Contract Progress</h2>
+          <h2 className="font-display text-2xl font-bold text-foreground">
+            Contract Progress
+          </h2>
           <p className="text-sm text-muted-foreground">
-            Update your planting milestones — each requires buyer co-confirmation.
+            Update your planting milestones — each requires buyer
+            co-confirmation.
           </p>
         </div>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <AlertCircle className="h-10 w-10 text-muted-foreground/40" />
-            <p className="mt-3 font-medium text-muted-foreground">No active contracts</p>
-            <p className="text-sm text-muted-foreground/60">Accept a contract from your inbox to start tracking milestones.</p>
+            <p className="mt-3 font-medium text-muted-foreground">
+              No active contracts
+            </p>
+            <p className="text-sm text-muted-foreground/60">
+              Accept a contract from your inbox to start tracking milestones.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -498,15 +682,22 @@ export function ContractProgress() {
       )}
 
       <div>
-        <h2 className="font-display text-2xl font-bold text-foreground">Contract Progress</h2>
+        <h2 className="font-display text-2xl font-bold text-foreground">
+          Contract Progress
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Each milestone requires buyer co-confirmation before progress advances.
-          Escrow only releases after delivery is confirmed by both parties.
+          Each milestone requires buyer co-confirmation before progress
+          advances. Escrow only releases after delivery is confirmed by both
+          parties.
         </p>
       </div>
 
       {activeContracts.length > 1 && (
-        <ContractSelector contracts={activeContracts} selectedId={selectedId} onSelect={setSelectedId} />
+        <ContractSelector
+          contracts={activeContracts}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+        />
       )}
 
       {selectedContract && (
@@ -515,9 +706,13 @@ export function ContractProgress() {
             <CardContent className="p-5">
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-display text-lg font-bold text-foreground">{selectedContract.crop}</h3>
+                  <h3 className="font-display text-lg font-bold text-foreground">
+                    {selectedContract.crop}
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    {selectedContract.volumeKg.toLocaleString()} kg · {selectedContract.buyerName} · Deliver by {selectedContract.targetDate}
+                    {selectedContract.volumeKg.toLocaleString()} kg ·{" "}
+                    {selectedContract.buyerName} · Deliver by{" "}
+                    {selectedContract.targetDate}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -526,7 +721,10 @@ export function ContractProgress() {
                       <ShieldAlert className="mr-1 h-3 w-3" /> Disputed
                     </Badge>
                   )}
-                  <Badge variant="outline" className="border-primary/30 text-primary">
+                  <Badge
+                    variant="outline"
+                    className="border-primary/30 text-primary"
+                  >
                     {selectedContract.status.replace("_", " ")}
                   </Badge>
                 </div>
@@ -538,16 +736,24 @@ export function ContractProgress() {
           {selectedContract.disputeFlag && (
             <DisputeFrozenBanner contractId={selectedContract.id} />
           )}
-          {selectedContract.pendingBuyerConfirmation && !selectedContract.disputeFlag && (
-            <PendingBuyerConfirmationBanner />
-          )}
+          {selectedContract.pendingBuyerConfirmation &&
+            !selectedContract.disputeFlag && <PendingBuyerConfirmationBanner />}
 
           {!selectedContract.disputeFlag && (
             <div className="flex flex-wrap gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
               <span className="font-medium text-foreground">Legend:</span>
-              <span className="flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5 text-primary" /> Co-confirmed</span>
-              <span className="flex items-center gap-1"><Hourglass className="h-3.5 w-3.5 text-amber-500" /> Awaiting buyer sign-off</span>
-              <span className="flex items-center gap-1"><ShieldAlert className="h-3.5 w-3.5 text-red-500" /> Disputed / Frozen</span>
+              <span className="flex items-center gap-1">
+                <ShieldCheck className="h-3.5 w-3.5 text-primary" />{" "}
+                Co-confirmed
+              </span>
+              <span className="flex items-center gap-1">
+                <Hourglass className="h-3.5 w-3.5 text-amber-500" /> Awaiting
+                buyer sign-off
+              </span>
+              <span className="flex items-center gap-1">
+                <ShieldAlert className="h-3.5 w-3.5 text-red-500" /> Disputed /
+                Frozen
+              </span>
             </div>
           )}
 
@@ -568,7 +774,9 @@ export function ContractProgress() {
                     step={step}
                     state={stepState}
                     evidence={evidence}
-                    onSubmit={(photoFileName) => handleSubmit(step, photoFileName)}
+                    onSubmit={(photoFileName) =>
+                      handleSubmit(step, photoFileName)
+                    }
                     onDispute={() => setDisputingStep(step.status)}
                     isLast={idx === MILESTONES.length - 1}
                   />
@@ -584,7 +792,8 @@ export function ContractProgress() {
                 Delivery Co-Confirmed!
               </h3>
               <p className="mt-1 text-sm text-emerald-700">
-                Both parties have confirmed. Head to <strong>Direct Payout</strong> to receive your payment.
+                Both parties have confirmed. Head to{" "}
+                <strong>Direct Payout</strong> to receive your payment.
               </p>
             </div>
           )}

@@ -1,4 +1,8 @@
-import { useAppStore } from "@/store/useAppStore";
+import {
+  useAppStore,
+  CropStatus,
+  VERIFIED_PROGRESS_MAP,
+} from "@/store/useAppStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +25,20 @@ import {
 } from "lucide-react";
 import ContractsIndex from "./contracts/ContractsIndex";
 
+const MILESTONE_LABELS: Record<CropStatus, string> = {
+  seeds_planted: "Seeds Planted",
+  fertilized: "Fertilized",
+  growing: "Growing",
+  ready_for_harvest: "Ready for Harvest",
+  harvested: "Harvested",
+  delivered: "Delivered",
+  pending: "Pending",
+};
+
+function getMilestoneLabel(status: CropStatus) {
+  return MILESTONE_LABELS[status] ?? status.replace(/_/g, " ");
+}
+
 export function ContractsView() {
   const {
     contracts,
@@ -36,13 +54,24 @@ export function ContractsView() {
   const [confirmModal, setConfirmModal] = useState(false);
   const [disputeModal, setDisputeModal] = useState(false);
   const [disputeReason, setDisputeReason] = useState("");
+  const [activeEvidenceStatus, setActiveEvidenceStatus] =
+    useState<CropStatus | null>(null);
   const contract = contracts.find((c) => c.id === selectedContractId);
-  const pendingDeliveryEvidence =
-    contract?.milestoneEvidence?.find(
-      (e) =>
-        e.cropStatus === "delivered" &&
-        e.verificationStatus === "pending_verification",
-    ) ?? null;
+
+  const currentMilestoneProgress =
+    VERIFIED_PROGRESS_MAP[contract?.cropStatus || "pending"] || 0;
+  const needsVerification =
+    contract &&
+    contract.cropStatus !== "pending" &&
+    contract.progress < currentMilestoneProgress;
+
+  const currentMilestoneEvidence = contract?.milestoneEvidence?.find(
+    (e) => e.cropStatus === contract.cropStatus,
+  );
+
+  const isCancelled = contract?.status === "declined";
+  const displayVolumeKg = isCancelled ? 0 : (contract?.volumeKg ?? 0);
+  const displayEscrowAmount = isCancelled ? 0 : (contract?.escrowAmount ?? 0);
 
   const hasDisputedEvidence =
     contract?.milestoneEvidence?.some(
@@ -71,7 +100,7 @@ export function ContractsView() {
                 <p className="font-display font-semibold">{c.crop}</p>
                 <p className="text-sm text-muted-foreground">
                   {c.volumeKg.toLocaleString()} kg ·{" "}
-                  {c.matchedCooperative?.name || "Unmatched"}
+                  {c.matchedCooperative?.name || c.buyerName || "Unmatched"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -87,7 +116,15 @@ export function ContractsView() {
                   </Badge>
                 )}
                 {/* ── END ──────────────────────────────────────────────────── */}
-                <Badge variant="secondary">{c.status.replace("_", " ")}</Badge>
+                {c.status === "declined" ? (
+                  <Badge className="border-red-200 bg-red-50 text-red-700 text-xs">
+                    Declined
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary">
+                    {c.status.replace("_", " ")}
+                  </Badge>
+                )}
               </div>
             </button>
           ))}
@@ -100,19 +137,22 @@ export function ContractsView() {
     fundContract(contract.id);
     setEscrowSuccess(true);
   };
-  const handleConfirmDelivery = () => {
-    verifyMilestone(contract.id, "delivered");
+  const handleConfirmEvidence = () => {
+    if (!activeEvidenceStatus) return;
+    verifyMilestone(contract.id, activeEvidenceStatus);
     setConfirmModal(false);
+    setActiveEvidenceStatus(null);
   };
   const handleRaiseDispute = () => {
-    if (!disputeReason.trim()) return;
-    disputeMilestone(contract.id, "delivered", disputeReason.trim());
+    if (!activeEvidenceStatus || !disputeReason.trim()) return;
+    disputeMilestone(contract.id, activeEvidenceStatus, disputeReason.trim());
     setDisputeReason("");
     setDisputeModal(false);
+    setActiveEvidenceStatus(null);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ opacity: isCancelled ? 0.75 : 1 }}>
       <button
         onClick={() => selectContract(null)}
         className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -122,29 +162,37 @@ export function ContractsView() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-display text-2xl font-bold text-foreground">
+          <h2
+            className={`font-display text-2xl font-bold ${
+              isCancelled ? "text-muted-foreground" : "text-foreground"
+            }`}
+          >
             {contract.crop}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {contract.volumeKg.toLocaleString()} kg ·{" "}
-            {contract.matchedCooperative?.name || "Unmatched"}
+            {displayVolumeKg.toLocaleString()} kg ·{" "}
+            {contract.matchedCooperative?.name ||
+              contract.buyerName ||
+              "Unmatched"}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {contract.escrowAmount === 0 && contract.status !== "open" && (
-            <Button
-              onClick={() => {
-                setEscrowModal(true);
-                setEscrowSuccess(false);
-              }}
-              className="bg-terracotta text-terracotta-foreground hover:bg-terracotta/90"
-            >
-              <Lock className="mr-2 h-4 w-4" /> Lock Funds in Escrow
-            </Button>
-          )}
-          {contract.escrowAmount > 0 && (
+          {contract.escrowAmount === 0 &&
+            contract.status !== "open" &&
+            !isCancelled && (
+              <Button
+                onClick={() => {
+                  setEscrowModal(true);
+                  setEscrowSuccess(false);
+                }}
+                className="bg-terracotta text-terracotta-foreground hover:bg-terracotta/90"
+              >
+                <Lock className="mr-2 h-4 w-4" /> Lock Funds in Escrow
+              </Button>
+            )}
+          {displayEscrowAmount > 0 && (
             <Badge className="bg-primary text-primary-foreground px-3 py-1.5">
-              ₱{contract.escrowAmount.toLocaleString()} Escrowed
+              ₱{displayEscrowAmount.toLocaleString()} Escrowed
             </Badge>
           )}
           {/* ── NEW: dispute frozen badge ─────────────────────────────────── */}
@@ -157,59 +205,103 @@ export function ContractsView() {
         </div>
       </div>
 
-      {/* ── NEW: Buyer delivery confirmation banner ────────────────────────────
-          Appears when the farmer has submitted delivery evidence and the buyer
-          must co-confirm before escrow releases. This is the primary place the
-          buyer performs their dual sign-off action.
+      {/* ── NEW: Buyer milestone verifier banner ───────────────────────────────
+          Appears when the farmer has advanced the crop status to a milestone
+          that needs buyer verification, regardless of evidence submission.
       ── END ── */}
-      {pendingDeliveryEvidence && !contract.disputeFlag && (
+      {needsVerification && !contract.disputeFlag && !isCancelled && (
         <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-5">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex items-start gap-3">
-              <Hourglass className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <div className="flex items-start gap-3">
+            <Hourglass className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div>
+              <p className="font-semibold text-amber-800">
+                Action Required: Verify Progress Update
+              </p>
+              <p className="mt-1 text-sm text-amber-700">
+                The farmer has reported reaching the{" "}
+                <span className="font-semibold">
+                  {getMilestoneLabel(contract.cropStatus)}
+                </span>{" "}
+                milestone. Please review and confirm or dispute this progress
+                update.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="font-semibold text-amber-800">
-                  Action Required: Confirm Delivery
+                  {getMilestoneLabel(contract.cropStatus)} milestone reported
                 </p>
                 <p className="mt-1 text-sm text-amber-700">
-                  The cooperative has submitted delivery evidence
-                  {pendingDeliveryEvidence.photoFileName
-                    ? ` (${pendingDeliveryEvidence.photoFileName})`
-                    : ""}{" "}
-                  and is awaiting your confirmation. Escrow of{" "}
-                  <strong>₱{contract.escrowAmount.toLocaleString()}</strong>{" "}
-                  will not release until you confirm or dispute.
-                </p>
-                <p className="mt-1 text-xs text-amber-600">
-                  Submitted:{" "}
-                  {new Date(pendingDeliveryEvidence.submittedAt).toLocaleString(
-                    "en-PH",
-                    {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    },
+                  {currentMilestoneEvidence ? (
+                    <>
+                      {currentMilestoneEvidence.photoFileName ? (
+                        <>Photo: {currentMilestoneEvidence.photoFileName}. </>
+                      ) : (
+                        "No photo evidence submitted. "
+                      )}
+                      Reported:{" "}
+                      {new Date(
+                        currentMilestoneEvidence.submittedAt,
+                      ).toLocaleString("en-PH", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </>
+                  ) : (
+                    "No evidence submitted for this milestone."
                   )}
                 </p>
+                {currentMilestoneEvidence?.disputeReason && (
+                  <p className="mt-2 text-xs text-red-600">
+                    Dispute reason: {currentMilestoneEvidence.disputeReason}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1 border-red-300 text-red-600 hover:bg-red-50"
+                  onClick={() => {
+                    setActiveEvidenceStatus(contract.cropStatus);
+                    setDisputeModal(true);
+                  }}
+                >
+                  <ShieldAlert className="h-4 w-4" /> Dispute
+                </Button>
+                <Button
+                  size="sm"
+                  className="gap-1 bg-emerald-600 text-white hover:bg-emerald-700"
+                  onClick={() => {
+                    setActiveEvidenceStatus(contract.cropStatus);
+                    setConfirmModal(true);
+                  }}
+                >
+                  <ShieldCheck className="h-4 w-4" /> Confirm
+                </Button>
               </div>
             </div>
-            <div className="flex gap-2 shrink-0">
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1 border-red-300 text-red-600 hover:bg-red-50"
-                onClick={() => setDisputeModal(true)}
-              >
-                <ShieldAlert className="h-4 w-4" /> Dispute
-              </Button>
-              <Button
-                size="sm"
-                className="gap-1 bg-emerald-600 text-white hover:bg-emerald-700"
-                onClick={() => setConfirmModal(true)}
-              >
-                <ShieldCheck className="h-4 w-4" /> Confirm Delivery
-              </Button>
+          </div>
+        </div>
+      )}
+
+      {isCancelled && (
+        <div className="rounded-xl border border-border bg-muted p-5 text-muted-foreground">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="mt-0.5 h-5 w-5 text-muted-foreground" />
+            <div>
+              <p className="font-semibold text-muted-foreground">
+                Contract Cancelled
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                This contract has been cancelled. All values are frozen at zero,
+                actions are disabled, and the view is presented in muted style.
+              </p>
             </div>
           </div>
         </div>
@@ -265,10 +357,10 @@ export function ContractsView() {
         </div>
       )}
 
-      <ContractsIndex />
+      {!isCancelled && <ContractsIndex />}
 
       {/* Cooperative Details — unchanged */}
-      {contract.matchedCooperative && (
+      {!isCancelled && contract.matchedCooperative && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Cooperative Details</CardTitle>
@@ -359,37 +451,33 @@ export function ContractsView() {
         </DialogContent>
       </Dialog>
 
-      {/* ── NEW: Delivery confirmation modal ────────────────────────────────────
-          Buyer explicitly co-confirms that delivery has been received.
-          This triggers verifyMilestone("delivered") in the store, which sets
-          buyerConfirmedDelivery = true and unlocks escrow for farmer payout.
+      {/* ── NEW: Progress verification modal ───────────────────────────────────
+          Buyer confirms milestone evidence submitted by the farmer. This calls
+          verifyMilestone(cropStatus) in the store for the selected milestone.
       ── END ── */}
       <Dialog open={confirmModal} onOpenChange={setConfirmModal}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-emerald-600" />
-              Confirm Delivery Received
+              Confirm Progress Update
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-4">
             <p className="text-sm text-muted-foreground">
-              You are confirming that{" "}
+              You are confirming the farmer's report that the{" "}
               <span className="font-semibold text-foreground">
-                {contract.volumeKg.toLocaleString()} kg of {contract.crop}
+                {getMilestoneLabel(activeEvidenceStatus || "pending")}
               </span>{" "}
-              has been received as agreed.
+              milestone has been reached.
             </p>
             <p className="text-sm text-muted-foreground">
-              This will release{" "}
-              <span className="font-semibold text-foreground">
-                ₱{contract.escrowAmount.toLocaleString()}
-              </span>{" "}
-              from escrow to the cooperative for farmer payouts.
+              This will update the contract progress and mark this milestone as
+              verified.
             </p>
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
-              ⚠️ This action is irreversible. Only confirm if you have
-              physically received and verified the goods.
+              ⚠️ This action is irreversible. Only confirm if you believe the
+              progress report is accurate.
             </div>
           </div>
           <DialogFooter>
@@ -397,10 +485,10 @@ export function ContractsView() {
               Cancel
             </Button>
             <Button
-              onClick={handleConfirmDelivery}
+              onClick={handleConfirmEvidence}
               className="bg-emerald-600 text-white hover:bg-emerald-700"
             >
-              <ShieldCheck className="mr-2 h-4 w-4" /> Yes, Confirm Delivery
+              <ShieldCheck className="mr-2 h-4 w-4" /> Yes, Confirm Progress
             </Button>
           </DialogFooter>
         </DialogContent>

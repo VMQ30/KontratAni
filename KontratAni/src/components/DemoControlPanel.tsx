@@ -291,7 +291,7 @@ export function DemoControlPanel() {
   const [fastTarget, setFastTarget] = useState<CropStatus>("growing");
 
   const contract = contracts.find((c) => c.id === selectedId) ?? null;
-  const handleSubmitNext = () => {
+  const submitNextMilestone = (withPhoto: boolean) => {
     if (!contract) return;
 
     const lastVerifiedIdx = (() => {
@@ -313,36 +313,46 @@ export function DemoControlPanel() {
     submitMilestoneEvidence(
       selectedId,
       nextStep,
-      `demo_${nextStep}_${Date.now()}.jpg`,
+      withPhoto ? `demo_${nextStep}_${Date.now()}.jpg` : "",
     );
+
     toast.success(`Evidence submitted: ${STAGE_LABELS[nextStep]}`, {
-      description:
-        "Awaiting buyer sign-off. Check ContractProgress to see the amber badge.",
+      description: withPhoto
+        ? "Evidence with photo was submitted and is awaiting buyer sign-off."
+        : "Milestone progress was submitted without photo and is awaiting buyer sign-off.",
       duration: 3500,
     });
   };
   const handleBuyerConfirm = () => {
     if (!contract) return;
 
-    const deliveredEvidence = contract.milestoneEvidence.find(
-      (e) => e.cropStatus === "delivered",
+    const completionStatuses = [...MILESTONE_ORDER];
+    const missingStatuses = completionStatuses.filter(
+      (status) =>
+        !contract.milestoneEvidence.some((e) => e.cropStatus === status),
     );
 
-    if (!deliveredEvidence) {
-      submitMilestoneEvidence(
-        selectedId,
-        "delivered",
-        `demo_delivered_${Date.now()}.jpg`,
-      );
-    }
+    missingStatuses.forEach((status) => {
+      submitMilestoneEvidence(selectedId, status, "");
+    });
+
+    const pendingStatuses = contract.milestoneEvidence
+      .filter((e) => e.verificationStatus === "pending_verification")
+      .map((e) => e.cropStatus);
+
+    const statusesToVerify = new Set<CropStatus>([
+      ...completionStatuses,
+      ...pendingStatuses,
+    ]);
+
     setTimeout(() => {
-      verifyMilestone(selectedId, "delivered");
-      toast.success("Buyer confirmed delivery!", {
+      statusesToVerify.forEach((status) => verifyMilestone(selectedId, status));
+      toast.success("Buyer confirmed progress!", {
         description:
-          "buyerConfirmedDelivery = true. PayoutView and DirectPayoutView are now unlocked.",
+          "All milestones are now completed and reflected in the verification log.",
         duration: 4000,
       });
-    }, 80);
+    }, 120);
   };
   const handleRaiseDispute = () => {
     if (!contract) return;
@@ -404,10 +414,32 @@ export function DemoControlPanel() {
       return;
     }
     resolveDispute(selectedId);
-    toast.success("Dispute resolved.", {
+    toast.success("Dispute settled.", {
       description:
         "disputeFlag = false. Evidence returned to pending_verification for re-review.",
       duration: 3500,
+    });
+  };
+
+  const handleCancelContract = () => {
+    if (!contract) return;
+    if (!contract.disputeFlag) {
+      toast.info("No active dispute on this contract.", { duration: 2000 });
+      return;
+    }
+
+    updateContract(selectedId, {
+      disputeFlag: false,
+      pendingBuyerConfirmation: false,
+      buyerConfirmedDelivery: false,
+      escrowAmount: 0,
+      status: "declined",
+    });
+
+    toast.success("Dispute cancelled and escrow returned to buyer.", {
+      description:
+        "Contract has been cancelled in demo mode and escrow has been refunded to the buyer.",
+      duration: 4000,
     });
   };
   const handleFastForward = () => {
@@ -589,14 +621,22 @@ export function DemoControlPanel() {
           <div className="space-y-5 px-4 py-4">
             {/* ── Section 1: Milestone Evidence ── */}
             <div>
-              <SectionLabel>Milestone Evidence</SectionLabel>
+              <SectionLabel>Milestone Setting</SectionLabel>
               <div className="space-y-2">
                 <ActionBtn
                   icon={Sprout}
-                  label="Submit Next Milestone (skip photo)"
-                  sublabel="Submits the next unlocked milestone. Sets it to pending_verification."
+                  label="Submit Next Milestone (with photo)"
+                  sublabel="Submits the next unlocked milestone with photo evidence."
                   color="blue"
-                  onClick={handleSubmitNext}
+                  onClick={() => submitNextMilestone(true)}
+                  disabled={!contract}
+                />
+                <ActionBtn
+                  icon={Sprout}
+                  label="Submit Next Milestone (without photo)"
+                  sublabel="Submits the next unlocked milestone without photo evidence."
+                  color="gray"
+                  onClick={() => submitNextMilestone(false)}
                   disabled={!contract}
                 />
               </div>
@@ -608,8 +648,8 @@ export function DemoControlPanel() {
               <div className="space-y-2">
                 <ActionBtn
                   icon={ShieldCheck}
-                  label="Buyer Confirm Delivery"
-                  sublabel="Calls verifyMilestone('delivered'). Unlocks payout portals."
+                  label="Confirm All Progress"
+                  sublabel="Verifies pending milestone updates and writes them to the verification log."
                   color="green"
                   onClick={handleBuyerConfirm}
                   disabled={!contract}
@@ -631,10 +671,18 @@ export function DemoControlPanel() {
                 />
                 <ActionBtn
                   icon={ShieldX}
-                  label="Resolve Dispute (Admin)"
-                  sublabel="Unfreezes escrow. Returns evidence for re-review."
+                  label="Settled"
+                  sublabel="Admin resolves the dispute and returns evidence for re-review."
                   color="amber"
                   onClick={handleResolveDispute}
+                  disabled={!contract || !contract.disputeFlag}
+                />
+                <ActionBtn
+                  icon={AlertTriangle}
+                  label="Cancel & Return Escrow"
+                  sublabel="Cancels the contract and returns escrow to the buyer."
+                  color="gray"
+                  onClick={handleCancelContract}
                   disabled={!contract || !contract.disputeFlag}
                 />
               </div>

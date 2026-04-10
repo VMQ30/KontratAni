@@ -16,6 +16,7 @@ export function PaymentsView() {
   const { contracts } = useAppStore();
 
   const funded = contracts.filter((c) => c.escrowAmount > 0);
+  const cancelledContracts = contracts.filter((c) => c.status === "declined");
   const totalEscrow = funded.reduce((s, c) => s + c.escrowAmount, 0);
   const frozenEscrow = funded
     .filter((c) => c.disputeFlag)
@@ -142,6 +143,23 @@ export function PaymentsView() {
           If any contract is disputed, surface a prominent alert so the buyer
           knows they have escrow frozen and needs admin resolution.
       ── END ── */}
+      {cancelledContracts.length > 0 && (
+        <div className="rounded-xl border-2 border-slate-300 bg-slate-50 p-4">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-slate-700" />
+            <div>
+              <p className="font-semibold text-slate-900">
+                Canceled Contracts Detected
+              </p>
+              <p className="mt-0.5 text-sm text-slate-700">
+                {cancelledContracts.length} contract(s) are cancelled. Check
+                your funds for returned escrow funds.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {funded.some((c) => c.disputeFlag) && (
         <div className="rounded-xl border-2 border-red-300 bg-red-50 p-4">
           <div className="flex items-start gap-3">
@@ -193,20 +211,22 @@ export function PaymentsView() {
           <Card
             key={c.id}
             className={
-              c.disputeFlag
+              c.status === "declined"
                 ? "border-red-200"
-                : c.pendingBuyerConfirmation && !c.buyerConfirmedDelivery
-                  ? "border-amber-200"
-                  : c.buyerConfirmedDelivery
-                    ? "border-emerald-200"
-                    : ""
+                : c.disputeFlag
+                  ? "border-red-200"
+                  : c.pendingBuyerConfirmation && !c.buyerConfirmedDelivery
+                    ? "border-amber-200"
+                    : c.buyerConfirmedDelivery
+                      ? "border-emerald-200"
+                      : ""
             }
           >
             <CardContent className="flex items-center justify-between p-4">
               <div>
                 <p className="font-display text-sm font-semibold">{c.crop}</p>
                 <p className="text-xs text-muted-foreground">
-                  {c.matchedCooperative?.name || "Unmatched"}
+                  {c.matchedCooperative?.name || c.buyerName || "Unmatched"}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -253,6 +273,13 @@ export function PaymentsView() {
                     )}
                     {/* ── END ────────────────────────────────────────────────── */}
                   </div>
+                ) : c.status === "declined" ? (
+                  <Badge
+                    variant="secondary"
+                    className="border-red-200 bg-red-50 text-red-700"
+                  >
+                    Declined
+                  </Badge>
                 ) : (
                   <Badge
                     variant="secondary"
